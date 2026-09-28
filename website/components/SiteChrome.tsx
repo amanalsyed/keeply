@@ -13,7 +13,7 @@ export function SiteHeader({ home = false }: { home?: boolean }) {
             <a href="#pricing">Pricing</a>
             <a href="#privacy">Privacy</a>
           </nav>
-          <a className="button small" href="#pricing">
+          <a className="button small" href="/downloads/Keeply-Setup.exe" download="Keeply-Setup.exe">
             Get the app <span>↗</span>
           </a>
         </>

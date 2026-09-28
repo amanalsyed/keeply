@@ -2,8 +2,8 @@ import { SiteFrame } from "../components/SiteChrome";
 
 export default function HomePage() {
   const checkoutUrl = process.env.CREEM_CHECKOUT_URL || "#pricing";
-  const downloadUrl = process.env.APP_DOWNLOAD_URL || "#pricing";
-  const downloadText = process.env.APP_DOWNLOAD_URL ? "Download for Windows" : "Windows download coming soon";
+  const downloadUrl = "/downloads/Keeply-Setup.exe";
+  const downloadText = "Download for Windows";
 
   return (
     <SiteFrame home>
@@ -14,7 +14,7 @@ export default function HomePage() {
             <h1>A lighter photo folder starts with one key.</h1>
             <p>Move through a big backlog one photo at a time. Keep it, send it to the Recycle Bin, or copy it into an album—without uploading your pictures anywhere.</p>
             <div className="hero-actions">
-              <a className="button" href={downloadUrl}>Try it free <span>→</span></a>
+              <a className="button" href={downloadUrl} download="Keeply-Setup.exe">Try it free <span>→</span></a>
               <a className="text-link" href="#how">See how it works <span>↓</span></a>
             </div>
             <div className="trust"><span>✓ Windows desktop app</span><span>✓ Your photos stay local</span><span>✓ No account required</span></div>
@@ -43,7 +43,7 @@ export default function HomePage() {
         <section id="pricing" className="section wrap pricing">
           <div className="section-head"><div className="eyebrow">STRAIGHTFORWARD PRICING</div><h2>Start free. Unlock the whole folder.</h2><p>Try the full workflow on three folders. Upgrade once when you’re ready to sort without limits.</p></div>
           <div className="plans">
-            <article className="plan"><div className="plan-label">FREE</div><div className="price">$0</div><p>Everything you need to see if it fits your workflow.</p><ul><li>3 unique folders on this PC</li><li>Up to 100 supported photos per folder</li><li>Keep, Recycle Bin, and album actions</li><li>Undo and keyboard shortcuts</li><li>Local processing, no account</li></ul><a className="button outline" href={downloadUrl}>{downloadText}</a></article>
+            <article className="plan"><div className="plan-label">FREE</div><div className="price">$0</div><p>Everything you need to see if it fits your workflow.</p><ul><li>3 unique folders on this PC</li><li>Up to 100 supported photos per folder</li><li>Keep, Recycle Bin, and album actions</li><li>Undo and keyboard shortcuts</li><li>Local processing, no account</li></ul><a className="button outline" href={downloadUrl} download="Keeply-Setup.exe">{downloadText}</a></article>
             <article className="plan featured"><div className="ribbon">ONE-TIME PURCHASE</div><div className="plan-label">LIFETIME</div><div className="price">$6 <small>once</small></div><p>One purchase. Keep sorting without limits.</p><ul><li>Unlimited folders and photos</li><li>Lifetime license</li><li>Activate on up to 3 PCs</li><li>Activated PCs work offline</li><li>All Free features included</li></ul><a className="button buy" href={checkoutUrl}>Get lifetime access <span>→</span></a><div className="checkout-note">Secure checkout powered by Creem</div></article>
           </div>
         </section>

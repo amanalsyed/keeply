@@ -35,24 +35,28 @@ $zipPath = Join-Path $releaseDir "Keeply-$Version-win-x64-portable.zip"
 if (Test-Path $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
 Compress-Archive -Path (Join-Path $publishDir "*") -DestinationPath $zipPath -CompressionLevel Optimal
 
-$compiler = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
+$compiler = Get-Command "makensis.exe" -ErrorAction SilentlyContinue
 if (-not $compiler) {
-    $innoPaths = @(
-        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-        "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+    $nsisPaths = @(
+        "${env:ProgramFiles(x86)}\NSIS\makensis.exe",
+        "$env:ProgramFiles\NSIS\makensis.exe"
     )
-    $compilerPath = $innoPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+    $compilerPath = $nsisPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
 } else {
     $compilerPath = $compiler.Source
 }
 
 if ($compilerPath) {
     $installerPath = Join-Path $releaseDir "Keeply-Setup-$Version.exe"
-    & $compilerPath "/DMyAppVersion=$Version" "/DPublishDir=$publishDir" "/O$releaseDir" "/FKeeply-Setup-$Version" (Join-Path $PSScriptRoot "Keeply.iss")
-    if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE." }
+    & $compilerPath "/DAPP_VERSION=$Version" "/DPUBLISH_DIR=$publishDir" "/DOUTPUT_DIR=$releaseDir" (Join-Path $PSScriptRoot "Keeply.nsi")
+    if ($LASTEXITCODE -ne 0) { throw "NSIS failed with exit code $LASTEXITCODE." }
+    $websiteDownloads = Join-Path $root "website\public\downloads"
+    New-Item -ItemType Directory -Force -Path $websiteDownloads | Out-Null
+    Copy-Item -LiteralPath $installerPath -Destination (Join-Path $websiteDownloads "Keeply-Setup.exe") -Force
+    Write-Host "Website download updated: $(Join-Path $websiteDownloads 'Keeply-Setup.exe')"
     Write-Host "Installer created: $installerPath"
 } else {
-    Write-Warning "Inno Setup 6 is not installed. The self-contained portable ZIP is ready; install Inno Setup and rerun this script to create Keeply-Setup-$Version.exe."
+    Write-Warning "NSIS is not installed. The self-contained portable ZIP is ready; install NSIS and rerun this script to create Keeply-Setup-$Version.exe."
 }
 
 Write-Host "Portable release created: $zipPath"
