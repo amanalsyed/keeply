@@ -7,7 +7,11 @@
       <DrawingImage.Drawing>
         <DrawingGroup>
           <GeometryDrawing Brush="#A6E7C3" Geometry="M17,2 H47 A15,15 0 0 1 62,17 V47 A15,15 0 0 1 47,62 H17 A15,15 0 0 1 2,47 V17 A15,15 0 0 1 17,2 Z" />
-          <GeometryDrawing Brush="{x:Null}" Pen="#101512,7" Geometry="M23,18 L23,46 M42,20 L27,32 L44,46" />
+          <GeometryDrawing Brush="{x:Null}" Geometry="M23,18 L23,46 M42,20 L27,32 L44,46">
+            <GeometryDrawing.Pen>
+              <Pen Brush="#101512" Thickness="7" />
+            </GeometryDrawing.Pen>
+          </GeometryDrawing>
         </DrawingGroup>
       </DrawingImage.Drawing>
     </DrawingImage>
