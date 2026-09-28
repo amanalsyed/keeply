@@ -1,0 +1,73 @@
+<Window x:Class="PhotoKeepKill.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Keeply" Width="1180" Height="820" MinWidth="760" MinHeight="560"
+        Icon="{StaticResource KeeplyIcon}"
+        Background="{StaticResource Canvas}" Foreground="#F4F5F5" WindowStartupLocation="CenterScreen"
+        AllowDrop="True" DragEnter="Window_DragEnter" Drop="Window_Drop" KeyDown="Window_KeyDown">
+  <Grid Margin="28">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <Grid Grid.Row="0" Margin="0,0,0,18">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Image Source="{StaticResource KeeplyIcon}" Width="25" Height="25" Margin="0,0,9,0"/>
+        <TextBlock Text="Keeply" FontSize="13" FontWeight="Bold" Foreground="#8BE0BC"/>
+                      </StackPanel>
+      <Button Grid.Column="1" Content="Choose folder" Click="ChooseFolder_Click" Margin="0,0,10,0"/>
+      <Button x:Name="AlbumFolderButton" Grid.Column="2" Content="Album: Choose" Click="ChangeAlbum_Click" Margin="0,0,10,0" ToolTip="Choose or change the album destination"/>
+      <Button x:Name="SoundToggleButton" Grid.Column="3" Content="Sound: On" Click="SoundToggle_Click" Margin="0,0,10,0"/>
+      <Button x:Name="MotionModeButton" Grid.Column="4" Content="Motion: Smooth" Click="MotionMode_Click" Margin="0,0,10,0" ToolTip="Click to cycle Smooth, Standard, and Reduced motion"/>
+      <Button x:Name="LicenseButton" Grid.Column="5" Content="Free · 0/3 folders" Click="License_Click" Margin="0,0,10,0" ToolTip="View free allowance or manage a lifetime license"/>
+      <Button Grid.Column="6" Content="⛶" ToolTip="Toggle fullscreen (F11)" Click="Fullscreen_Click" Padding="13,9"/>
+    </Grid>
+    <Border Grid.Row="1" Background="#0A0B0D" BorderBrush="#222629" BorderThickness="1" CornerRadius="16" ClipToBounds="True"
+            DragEnter="Window_DragEnter" Drop="Window_Drop">
+      <Grid>
+        <Image x:Name="PhotoImage" Stretch="Uniform" Margin="18" SnapsToDevicePixels="True"/>
+        <StackPanel x:Name="EmptyPanel" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440">
+          <TextBlock x:Name="EmptyHeading" Text="A lighter photo folder starts here." FontSize="27" FontWeight="SemiBold" TextAlignment="Center"/>
+          <TextBlock x:Name="EmptyDescription" Text="Choose a folder or drop it anywhere in this window. Your photos stay on this PC." Foreground="{StaticResource Muted}" FontSize="15" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,22"/>
+          <Button Content="Choose a photo folder" Click="ChooseFolder_Click" HorizontalAlignment="Center" Background="#245843" BorderBrush="#367A5D"/>
+        </StackPanel>
+        <StackPanel x:Name="EndPanel" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="All done." FontSize="34" FontWeight="SemiBold" TextAlignment="Center"/>
+          <TextBlock Text="This folder is all caught up." Foreground="{StaticResource Muted}" FontSize="15" Margin="0,10,0,8" TextAlignment="Center"/>
+          <TextBlock x:Name="FinishStatsText" Foreground="#C5CFCA" FontSize="13" Margin="0,0,0,22" TextAlignment="Center"/>
+          <Button Content="Choose another folder" Click="ChooseFolder_Click" HorizontalAlignment="Center"/>
+        </StackPanel>
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,18" Background="#D9111315" CornerRadius="9" Padding="12,7">
+          <TextBlock x:Name="FileNameText" FontSize="13" Foreground="#D6DADD" TextTrimming="CharacterEllipsis" MaxWidth="650"/>
+        </Border>
+        <Border x:Name="ActionBadge" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22,12" CornerRadius="14"
+                Background="#E6191C1F" BorderBrush="#75817E" BorderThickness="1" Opacity="0" Visibility="Collapsed">
+          <TextBlock x:Name="ActionBadgeText" FontSize="22" FontWeight="Bold"/>
+        </Border>
+      </Grid>
+    </Border>
+    <Grid Grid.Row="2" Margin="0,18,0,0">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <Grid Grid.Row="0">
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+       <StackPanel VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock x:Name="ProgressText" Text="0 / 0" FontSize="19" FontWeight="SemiBold"/>
+          <TextBlock x:Name="FolderText" Text="Choose a folder to begin" FontSize="12" Foreground="{StaticResource Muted}" Margin="13,4,0,0" TextTrimming="CharacterEllipsis" MaxWidth="360"/>
+        </StackPanel>
+        <TextBlock x:Name="ActionCountsText" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
+       </StackPanel>
+       <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+        <Button x:Name="PreviousButton" Content="←  Previous" Click="Previous_Click" Margin="0,0,8,0" ToolTip="Left arrow"/>
+        <Button x:Name="NextButton" Content="Next  →" Click="Next_Click" ToolTip="Right arrow"/>
+       </StackPanel>
+       <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button x:Name="UndoButton" Content="↶  Undo · U" Click="Undo_Click" Margin="0,0,9,0"/>
+        <Button x:Name="KeepButton" Content="Keep · K" Click="Keep_Click" Background="#214633" BorderBrush="#326447" Margin="0,0,9,0"/>
+        <Button x:Name="AlbumButton" Content="Album · A" Click="Album_Click" Background="#26384A" BorderBrush="#3C5870" Margin="0,0,9,0"/>
+        <Button x:Name="TrashButton" Content="Trash · T" Click="Trash_Click" Background="#492B2C" BorderBrush="#754345"/>
+       </StackPanel>
+      </Grid>
+      <ProgressBar x:Name="QueueProgressBar" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Height="4" Margin="0,11,0,0" Background="#292D30" Foreground="#8BE0BC" BorderThickness="0"/>
+      <TextBlock x:Name="StatusText" Grid.Row="2" HorizontalAlignment="Center" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
+    </Grid>
+  </Grid>
+</Window>

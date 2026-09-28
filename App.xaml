@@ -1,0 +1,36 @@
+<Application x:Class="PhotoKeepKill.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+  <Application.Resources>
+    <DrawingImage x:Key="KeeplyIcon">
+      <DrawingImage.Drawing>
+        <DrawingGroup>
+          <GeometryDrawing Brush="#A6E7C3" Geometry="M17,2 H47 A15,15 0 0 1 62,17 V47 A15,15 0 0 1 47,62 H17 A15,15 0 0 1 2,47 V17 A15,15 0 0 1 17,2 Z" />
+          <GeometryDrawing Brush="{x:Null}" Pen="#101512,7" Geometry="M23,18 L23,46 M42,20 L27,32 L44,46" />
+        </DrawingGroup>
+      </DrawingImage.Drawing>
+    </DrawingImage>
+    <SolidColorBrush x:Key="Canvas" Color="#101214" />
+    <SolidColorBrush x:Key="Panel" Color="#191C1F" />
+    <SolidColorBrush x:Key="Muted" Color="#92999F" />
+    <Style TargetType="Button">
+      <Setter Property="Foreground" Value="#F4F5F5" />
+      <Setter Property="Background" Value="#24282B" />
+      <Setter Property="BorderBrush" Value="#34393D" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="16,10" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Application.Resources>
+</Application>

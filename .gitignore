@@ -1,0 +1,20 @@
+# .NET build output
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+.vs/
+
+# Next.js build output and dependencies
+website/.next/
+website/node_modules/
+website/out/
+website/coverage/
+
+# Local environment secrets
+website/.env*
+!website/.env.example
+
+# Local demo media may contain private photos or recordings
+demo_output/
