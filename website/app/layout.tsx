@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { ScrollReveal } from "../components/ScrollReveal";
+import { AnalyticsConsent } from "../components/AnalyticsConsent";
 import "../site.css";
 
 const poppins = Poppins({
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={poppins.variable}>
       <body>
         <ScrollReveal />
+        <AnalyticsConsent />
         {children}
       </body>
     </html>
