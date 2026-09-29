@@ -49,6 +49,7 @@ export default function HomePage() {
             <article className="plan"><div className="plan-label">FREE</div><div className="price">$0</div><p>Everything you need to see if it fits your workflow.</p><ul><li>3 unique folders on this PC</li><li>Up to 100 supported photos per folder</li><li>Keep, Recycle Bin, and album actions</li><li>Undo and keyboard shortcuts</li><li>Local processing, no account</li></ul><a className="button outline" href={downloadUrl} download="Keeply-Setup.exe">{downloadText}</a></article>
             <article className="plan featured"><div className="ribbon">ONE-TIME PURCHASE</div><div className="plan-label">LIFETIME</div><div className="price">$6 <small>once</small></div><p>One purchase. Keep sorting without limits.</p><ul><li>Unlimited folders and photos</li><li>Lifetime license</li><li>Activate on up to 3 PCs</li><li>Activated PCs work offline</li><li>All Free features included</li></ul><a className="button buy" href={checkoutUrl}>Get lifetime access <span>→</span></a><div className="checkout-note">Secure checkout powered by Creem</div></article>
           </div>
+          <p className="guarantee-note"><strong>14-day money-back guarantee.</strong> If Keeply isn’t right for you, request a full refund within 14 calendar days of purchase. <a href="/refunds">See refund policy</a>.</p>
         </section>
 
         <section className="faq wrap" data-reveal><div><div className="eyebrow">GOOD TO KNOW</div><h2>Questions,<br />answered.</h2></div><div className="faq-list">
@@ -56,6 +57,7 @@ export default function HomePage() {
           <details><summary>What happens when I press Trash?</summary><p>The selected photo is sent to the Windows Recycle Bin, where Windows can restore it. The app’s Undo can restore its latest trash action when the item is still available.</p></details>
           <details><summary>Can I use my license without internet?</summary><p>Internet is needed for initial activation and online deactivation. After activation, that PC stays unlocked while offline.</p></details>
           <details><summary>How do I move my license to another PC?</summary><p>Deactivate a PC while online, then activate on the new PC. Creem enforces the three-PC activation limit.</p></details>
+          <details><summary>Does Keeply have a money-back guarantee?</summary><p>Yes. Request a full refund within 14 calendar days of purchase by emailing our support team. See the <a href="/refunds">refund policy</a> for details.</p></details>
           <details><summary>What image types are supported?</summary><p>JPG, JPEG, PNG, and WebP. WebP preview support depends on the Windows WebP Image Extension.</p></details>
         </div></section>
       </main>
