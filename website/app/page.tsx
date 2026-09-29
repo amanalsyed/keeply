@@ -8,7 +8,7 @@ export default function HomePage() {
   return (
     <SiteFrame home>
       <main>
-        <section className="hero wrap">
+        <section className="hero wrap" data-reveal>
           <div className="hero-copy">
             <div className="eyebrow"><i /> LOCAL PHOTO TRIAGE FOR WINDOWS</div>
             <h1>Sort your photos, one at a time.</h1>
@@ -30,9 +30,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="proof wrap"><div><strong>One photo</strong><span>on screen at a time</span></div><div><strong>Three keys</strong><span>to clear the queue</span></div><div><strong>Zero uploads</strong><span>photos stay on your PC</span></div></section>
+        <section className="proof wrap" data-reveal><div><strong>One photo</strong><span>on screen at a time</span></div><div><strong>Three keys</strong><span>to clear the queue</span></div><div><strong>Zero uploads</strong><span>photos stay on your PC</span></div></section>
 
-        <section id="how" className="section wrap">
+        <section id="how" className="section wrap" data-reveal>
           <div className="section-head"><div className="eyebrow">SIMPLE BY DESIGN</div><h2>From cluttered folder to<br />clear decisions.</h2></div>
           <div className="steps">
             <article><span className="step-no">01</span><h3>Choose a folder</h3><p>Pick a folder or drag it into the app. Keeply scans images directly inside it.</p></article>
@@ -41,9 +41,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="privacy-band" id="privacy"><div className="wrap privacy-inner"><div><div className="eyebrow">PRIVATE BY DEFAULT</div><h2>Your photos stay yours.</h2><p>Images are opened and processed on your Windows PC. Keep leaves originals in place, Trash uses the Windows Recycle Bin, and Album copies to a folder you choose. There is no photo cloud or proprietary library.</p></div><div className="privacy-stamp"><span>LOCAL</span><b>100%</b><span>PHOTO PROCESSING</span></div></div></section>
+        <section className="privacy-band" id="privacy" data-reveal><div className="wrap privacy-inner"><div><div className="eyebrow">PRIVATE BY DEFAULT</div><h2>Your photos stay yours.</h2><p>Images are opened and processed on your Windows PC. Keep leaves originals in place, Trash uses the Windows Recycle Bin, and Album copies to a folder you choose. There is no photo cloud or proprietary library.</p></div><div className="privacy-stamp"><span>LOCAL</span><b>100%</b><span>PHOTO PROCESSING</span></div></div></section>
 
-        <section id="pricing" className="section wrap pricing">
+        <section id="pricing" className="section wrap pricing" data-reveal>
           <div className="section-head"><div className="eyebrow">STRAIGHTFORWARD PRICING</div><h2>Start free. Unlock the whole folder.</h2><p>Try the full workflow on three folders. Upgrade once when you’re ready to sort without limits.</p></div>
           <div className="plans">
             <article className="plan"><div className="plan-label">FREE</div><div className="price">$0</div><p>Everything you need to see if it fits your workflow.</p><ul><li>3 unique folders on this PC</li><li>Up to 100 supported photos per folder</li><li>Keep, Recycle Bin, and album actions</li><li>Undo and keyboard shortcuts</li><li>Local processing, no account</li></ul><a className="button outline" href={downloadUrl} download="Keeply-Setup.exe">{downloadText}</a></article>
@@ -51,7 +51,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="faq wrap"><div><div className="eyebrow">GOOD TO KNOW</div><h2>Questions,<br />answered.</h2></div><div className="faq-list">
+        <section className="faq wrap" data-reveal><div><div className="eyebrow">GOOD TO KNOW</div><h2>Questions,<br />answered.</h2></div><div className="faq-list">
           <details><summary>Does the app upload my photos?</summary><p>No. Photo previews and file actions stay on your Windows PC. License activation sends the key and a random installation name to the licensing service; it does not send folder paths or image data.</p></details>
           <details><summary>What happens when I press Trash?</summary><p>The selected photo is sent to the Windows Recycle Bin, where Windows can restore it. The app’s Undo can restore its latest trash action when the item is still available.</p></details>
           <details><summary>Can I use my license without internet?</summary><p>Internet is needed for initial activation and online deactivation. After activation, that PC stays unlocked while offline.</p></details>
