@@ -29,7 +29,7 @@ export default function ThankYouPage() {
             </ol>
           </div>
 
-          <a className="button success-download" href="/downloads/Keeply-Setup.exe" download="Keeply-Setup.exe">Download Keeply for Windows <span>↓</span></a>
+          <a className="button success-download" href="/downloads/Keeply-Setup.exe" download="Keeply-Setup.exe" data-ga-event="download_app" data-ga-location="thank_you">Download Keeply for Windows <span>↓</span></a>
           <p className="success-help">Already installed Keeply? Open it and paste your key. Need help? <a href={`mailto:${supportEmail}`}>{supportEmail}</a>.</p>
         </section>
       </main>

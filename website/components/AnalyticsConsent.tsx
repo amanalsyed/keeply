@@ -6,6 +6,12 @@ import Script from "next/script";
 const measurementId = "G-NW89B3FEEX";
 const consentStorageKey = "keeply-analytics-consent";
 
+declare global {
+  interface Window {
+    dataLayer?: IArguments[] | unknown[];
+  }
+}
+
 export function AnalyticsConsent() {
   const [choice, setChoice] = useState<"granted" | "denied" | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -19,8 +25,35 @@ export function AnalyticsConsent() {
     }
 
     const openSettings = () => setIsOpen(true);
+    const trackLinkClick = (event: MouseEvent) => {
+      if (window.localStorage.getItem(consentStorageKey) !== "granted") return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest<HTMLAnchorElement>("a[data-ga-event]");
+      if (!link) return;
+
+      const eventName = link.dataset.gaEvent;
+      if (!eventName) return;
+
+      const params: Record<string, unknown> = {
+        button_location: link.dataset.gaLocation || "unspecified",
+        button_text: link.textContent?.trim().replace(/\s+/g, " ").slice(0, 80) || "",
+      };
+      if (eventName === "begin_checkout") {
+        params.currency = "USD";
+        params.value = 6;
+        params.items = [{ item_id: "keeply-lifetime", item_name: "Keeply Lifetime License", price: 6, quantity: 1 }];
+      }
+
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push(["event", eventName, params]);
+    };
     window.addEventListener("keeply:privacy-settings", openSettings);
-    return () => window.removeEventListener("keeply:privacy-settings", openSettings);
+    document.addEventListener("click", trackLinkClick);
+    return () => {
+      window.removeEventListener("keeply:privacy-settings", openSettings);
+      document.removeEventListener("click", trackLinkClick);
+    };
   }, []);
 
   function saveChoice(nextChoice: "granted" | "denied") {
