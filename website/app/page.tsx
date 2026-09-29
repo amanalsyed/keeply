@@ -19,11 +19,14 @@ export default function HomePage() {
             </div>
             <div className="trust"><span>✓ Windows desktop app</span><span>✓ Your photos stay local</span><span>✓ No account required</span></div>
           </div>
-          <div className="app-card">
-            <div className="app-top"><div className="dots"><b /><b /><b /></div><span>Keeply</span><span className="counter">127 / 2,000</span></div>
-            <div className="photo"><div className="sun" /><div className="hill h1" /><div className="hill h2" /><div className="lake" /><div className="photo-label">IMG_4821.JPG</div><div className="stamp keep">KEEP</div></div>
-            <div className="app-bottom"><span className="key"><b>K</b> Keep</span><span className="key"><b>A</b> Album</span><span className="key"><b>T</b> Trash</span></div>
-            <div className="progress"><i /></div>
+          <div className="hero-video">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/FwgZaTbbZLI?rel=0"
+              title="Keeply photo sorting demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
           </div>
         </section>
 
