@@ -1,7 +1,7 @@
 param(
     [string]$Version = "1.0.0",
     [string]$ApiBaseUrl = "",
-    [string]$CheckoutUrl = ""
+    [string]$CheckoutUrl = "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B"
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,6 +13,9 @@ $releaseDir = Join-Path $artifactRoot "release"
 
 if ([string]::IsNullOrWhiteSpace($ApiBaseUrl) -or $ApiBaseUrl -notmatch '^https://') {
     throw "Pass the deployed public HTTPS website URL with -ApiBaseUrl before creating a release."
+}
+if ([string]::IsNullOrWhiteSpace($CheckoutUrl) -or $CheckoutUrl -notmatch '^https://') {
+    throw "Pass the public HTTPS Creem Checkout URL with -CheckoutUrl before creating a release."
 }
 
 New-Item -ItemType Directory -Force -Path $artifactRoot, $releaseDir | Out-Null

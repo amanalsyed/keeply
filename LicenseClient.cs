@@ -9,6 +9,8 @@ namespace PhotoKeepKill;
 
 internal sealed class LicenseClient
 {
+    private const string DefaultApiBaseUrl = "https://keeply-hazel.vercel.app/";
+    private const string DefaultCheckoutUrl = "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
     private readonly string _baseUrl;
     public string CheckoutUrl { get; }
@@ -16,8 +18,10 @@ internal sealed class LicenseClient
     {
         var config = Path.Combine(AppContext.BaseDirectory, "licensing.json");
         using var json = File.Exists(config) ? JsonDocument.Parse(File.ReadAllText(config)) : null;
-        _baseUrl = json?.RootElement.TryGetProperty("apiBaseUrl", out var api) == true ? api.GetString() ?? "" : "";
-        CheckoutUrl = json?.RootElement.TryGetProperty("checkoutUrl", out var checkout) == true ? checkout.GetString() ?? "" : "";
+        var configuredApi = json?.RootElement.TryGetProperty("apiBaseUrl", out var api) == true ? api.GetString() : null;
+        var configuredCheckout = json?.RootElement.TryGetProperty("checkoutUrl", out var checkout) == true ? checkout.GetString() : null;
+        _baseUrl = string.IsNullOrWhiteSpace(configuredApi) ? DefaultApiBaseUrl : configuredApi;
+        CheckoutUrl = string.IsNullOrWhiteSpace(configuredCheckout) ? DefaultCheckoutUrl : configuredCheckout;
         _baseUrl = _baseUrl.TrimEnd('/');
     }
     public async Task<string> ActivateAsync(string key, string installName)
