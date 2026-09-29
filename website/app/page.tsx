@@ -11,8 +11,8 @@ export default function HomePage() {
         <section className="hero wrap">
           <div className="hero-copy">
             <div className="eyebrow"><i /> LOCAL PHOTO TRIAGE FOR WINDOWS</div>
-            <h1>A lighter photo folder starts with one key.</h1>
-            <p>Move through a big backlog one photo at a time. Keep it, send it to the Recycle Bin, or copy it into an album—without uploading your pictures anywhere.</p>
+            <h1>Sort your photos, one at a time.</h1>
+            <p>Open a folder and review each photo. Press K to keep it, T to send it to the Recycle Bin, or A to copy it to an album. Your photos stay on your PC.</p>
             <div className="hero-actions">
               <a className="button" href={downloadUrl} download="Keeply-Setup.exe">Try it free <span>→</span></a>
               <a className="text-link" href="#how">See how it works <span>↓</span></a>
