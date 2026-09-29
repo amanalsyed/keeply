@@ -13,6 +13,9 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.trykeeply.live"),
+  verification: {
+    google: "ko6lTMYRgQP26YnDoBNNGnL41zaow8acpoJIcZ8S34Y",
+  },
   title: "Keeply — Sort your photos, one at a time",
   description:
     "A simple Windows app to keep, trash, or save photos to an album. Your photos stay on your PC.",
