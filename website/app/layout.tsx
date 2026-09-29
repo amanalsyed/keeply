@@ -11,10 +11,34 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Keeply — A lighter photo folder",
+  metadataBase: new URL("https://www.trykeeply.live"),
+  title: "Keeply — Sort your photos, one at a time",
   description:
-    "A fast, private way to sort a folder of photos. Keep, trash, or album each photo with one key.",
+    "A simple Windows app to keep, trash, or save photos to an album. Your photos stay on your PC.",
   icons: { icon: "/keeply-logo.svg" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Keeply",
+    title: "Keeply — Sort your photos, one at a time",
+    description:
+      "A simple Windows app to keep, trash, or save photos to an album. Your photos stay on your PC.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Keeply — Sort your photos, one at a time. Your photos stay on your PC.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Keeply — Sort your photos, one at a time",
+    description:
+      "A simple Windows app to keep, trash, or save photos to an album. Your photos stay on your PC.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

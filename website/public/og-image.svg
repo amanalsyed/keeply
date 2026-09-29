@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101512"/>
+      <stop offset="1" stop-color="#17211a"/>
+    </linearGradient>
+    <linearGradient id="scene" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#54736f"/>
+      <stop offset=".56" stop-color="#9fb99d"/>
+      <stop offset="1" stop-color="#293f39"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#a6e7c3" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#a6e7c3" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="photoClip"><rect x="750" y="192" width="365" height="278" rx="12"/></clipPath>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <ellipse cx="1050" cy="170" rx="390" ry="340" fill="url(#glow)"/>
+  <path d="M0 535C210 482 344 591 572 541s384-37 628-113v202H0Z" fill="#a6e7c3" opacity=".025"/>
+
+  <g transform="translate(84 82) scale(1.02)">
+    <rect width="64" height="64" rx="16" fill="#a6e7c3"/>
+    <path d="M21 17v30M43 18 26 32l19 15" fill="none" stroke="#101512" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="166" y="127" fill="#f4f4ed" font-family="Poppins,Arial,sans-serif" font-size="42" font-weight="600" letter-spacing="-1">Keeply</text>
+  <text x="88" y="244" fill="#a6e7c3" font-family="Poppins,Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="3">LOCAL PHOTO TRIAGE FOR WINDOWS</text>
+  <text x="84" y="340" fill="#f4f4ed" font-family="Poppins,Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2.5">Sort your photos,</text>
+  <text x="84" y="418" fill="#f4f4ed" font-family="Poppins,Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2.5">one at a time.</text>
+  <text x="88" y="478" fill="#a0aaa2" font-family="Poppins,Arial,sans-serif" font-size="21" font-weight="400">Keep it, trash it, or save it to an album.</text>
+  <rect x="88" y="526" width="250" height="40" rx="20" fill="#1b2820" stroke="#32483a"/>
+  <circle cx="110" cy="546" r="5" fill="#a6e7c3"/>
+  <text x="126" y="551" fill="#c8d8cd" font-family="Poppins,Arial,sans-serif" font-size="13" font-weight="500" letter-spacing=".5">YOUR PHOTOS STAY ON YOUR PC</text>
+
+  <rect x="714" y="105" width="438" height="430" rx="22" fill="#171e1a" stroke="#354138" stroke-width="2"/>
+  <circle cx="746" cy="139" r="5" fill="#526057"/>
+  <circle cx="764" cy="139" r="5" fill="#526057"/>
+  <circle cx="782" cy="139" r="5" fill="#526057"/>
+  <text x="933" y="144" text-anchor="middle" fill="#c3ccc5" font-family="Poppins,Arial,sans-serif" font-size="13" font-weight="600" letter-spacing="1">KEEPLY</text>
+  <text x="1116" y="144" text-anchor="end" fill="#e4eae5" font-family="Poppins,Arial,sans-serif" font-size="13" font-weight="600">127 / 2,000</text>
+  <rect x="750" y="192" width="365" height="278" rx="12" fill="url(#scene)"/>
+  <g clip-path="url(#photoClip)">
+    <circle cx="1040" cy="250" r="29" fill="#ffe6a9" opacity=".95"/>
+    <path d="M690 386Q820 268 937 351t231-2v139H690Z" fill="#4e6f59"/>
+    <path d="M730 408Q876 315 1005 383t180-4v115H730Z" fill="#314b42"/>
+    <path d="M732 423q183-14 416 3v78H732Z" fill="#526f68"/>
+  </g>
+  <rect x="777" y="219" width="111" height="45" rx="7" fill="#101512" fill-opacity=".72"/>
+  <text x="832" y="247" text-anchor="middle" fill="#a6e7c3" font-family="Poppins,Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="1">PHOTO</text>
+  <g font-family="Poppins,Arial,sans-serif" font-size="13" font-weight="500" fill="#d9e1da" text-anchor="middle">
+    <rect x="762" y="485" width="102" height="32" rx="8" fill="#202923" stroke="#45534a"/>
+    <rect x="882" y="485" width="102" height="32" rx="8" fill="#202923" stroke="#45534a"/>
+    <rect x="1002" y="485" width="102" height="32" rx="8" fill="#202923" stroke="#45534a"/>
+    <text x="813" y="506"><tspan fill="#a6e7c3" font-weight="700">K</tspan><tspan dx="6">Keep</tspan></text>
+    <text x="933" y="506"><tspan fill="#a6e7c3" font-weight="700">A</tspan><tspan dx="6">Album</tspan></text>
+    <text x="1053" y="506"><tspan fill="#a6e7c3" font-weight="700">T</tspan><tspan dx="6">Trash</tspan></text>
+  </g>
+</svg>
