@@ -44,7 +44,7 @@ Section "Keeply"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   CreateDirectory "$SMPROGRAMS\Keeply"
-  CreateShortcut "$SMPROGRAMS\Keeply\Keeply.lnk" "$INSTDIR\Keeply.exe"
+  CreateShortcut "$SMPROGRAMS\Keeply\Keeply.lnk" "$INSTDIR\Keeply.exe" "" "$INSTDIR\Keeply.exe" 0
   CreateShortcut "$SMPROGRAMS\Keeply\Uninstall Keeply.lnk" "$INSTDIR\Uninstall.exe"
 
   WriteRegStr HKCU "Software\Keeply" "InstallDir" "$INSTDIR"

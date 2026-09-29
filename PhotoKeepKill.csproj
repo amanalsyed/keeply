@@ -9,8 +9,10 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <RootNamespace>PhotoKeepKill</RootNamespace>
     <AssemblyName>Keeply</AssemblyName>
+    <ApplicationIcon>assets\Keeply.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="licensing.json" CopyToOutputDirectory="PreserveNewest" />
+    <Resource Include="assets\Keeply.ico" />
   </ItemGroup>
 </Project>
