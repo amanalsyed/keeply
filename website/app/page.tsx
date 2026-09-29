@@ -1,7 +1,7 @@
 import { SiteFrame } from "../components/SiteChrome";
 
 export default function HomePage() {
-  const checkoutUrl = process.env.CREEM_CHECKOUT_URL || "#pricing";
+  const checkoutUrl = process.env.CREEM_CHECKOUT_URL || "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B";
   const downloadUrl = "/downloads/Keeply-Setup.exe";
   const downloadText = "Download for Windows";
 
