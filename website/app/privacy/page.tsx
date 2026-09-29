@@ -4,7 +4,7 @@ import { PolicyPage } from "../../components/PolicyPage";
 export const metadata: Metadata = { title: "Privacy — Keeply" };
 
 export default function PrivacyPage() {
-  const supportEmail = process.env.SUPPORT_EMAIL || "keeply@gmail.com";
+  const supportEmail = process.env.SUPPORT_EMAIL || "trykeeply@gmail.com";
 
   return <PolicyPage title="Privacy">
     <p><strong>Effective date: September 28, 2026.</strong> This notice explains how Keeply's publisher handles information when you use Keeply and this website.</p>

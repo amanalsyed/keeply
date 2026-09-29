@@ -4,7 +4,7 @@ import { PolicyPage } from "../../components/PolicyPage";
 export const metadata: Metadata = { title: "Refunds — Keeply" };
 
 export default function RefundsPage() {
-  const supportEmail = process.env.SUPPORT_EMAIL || "keeply@gmail.com";
+  const supportEmail = process.env.SUPPORT_EMAIL || "trykeeply@gmail.com";
 
   return <PolicyPage title="Refund policy">
     <p><strong>Effective date: September 28, 2026.</strong> We offer a 14-calendar-day refund period for the Keeply lifetime license. A buyer who emails us within 14 calendar days of the purchase date will receive a full refund through Creem. No reason is required. This voluntary policy does not limit refund or cancellation rights that apply under consumer law.</p>

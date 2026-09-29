@@ -4,7 +4,7 @@ import { PolicyPage } from "../../components/PolicyPage";
 export const metadata: Metadata = { title: "Terms — Keeply" };
 
 export default function TermsPage() {
-  const supportEmail = process.env.SUPPORT_EMAIL || "keeply@gmail.com";
+  const supportEmail = process.env.SUPPORT_EMAIL || "trykeeply@gmail.com";
   const governingLaw = process.env.GOVERNING_LAW;
 
   return <PolicyPage title="Terms of use">

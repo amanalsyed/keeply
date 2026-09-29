@@ -25,7 +25,7 @@ export function SiteHeader({ home = false }: { home?: boolean }) {
 }
 
 export function SiteFooter() {
-  const supportEmail = process.env.SUPPORT_EMAIL || "keeply@gmail.com";
+  const supportEmail = process.env.SUPPORT_EMAIL || "trykeeply@gmail.com";
   return (
     <footer className="footer">
       <div className="wrap foot-inner">
