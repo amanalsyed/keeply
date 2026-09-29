@@ -1,6 +1,6 @@
 param(
     [string]$Version = "1.0.0",
-    [string]$ApiBaseUrl = "",
+    [string]$ApiBaseUrl = "https://www.trykeeply.live/",
     [string]$CheckoutUrl = "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B"
 )
 
@@ -12,7 +12,7 @@ $publishDir = Join-Path $artifactRoot "Keeply-win-x64"
 $releaseDir = Join-Path $artifactRoot "release"
 
 if ([string]::IsNullOrWhiteSpace($ApiBaseUrl) -or $ApiBaseUrl -notmatch '^https://') {
-    throw "Pass the deployed public HTTPS website URL with -ApiBaseUrl before creating a release."
+    throw "The API base URL must be a public HTTPS URL."
 }
 if ([string]::IsNullOrWhiteSpace($CheckoutUrl) -or $CheckoutUrl -notmatch '^https://') {
     throw "Pass the public HTTPS Creem Checkout URL with -CheckoutUrl before creating a release."

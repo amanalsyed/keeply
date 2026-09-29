@@ -9,7 +9,7 @@ namespace PhotoKeepKill;
 
 internal sealed class LicenseClient
 {
-    private const string DefaultApiBaseUrl = "https://keeply-hazel.vercel.app/";
+    private const string DefaultApiBaseUrl = "https://www.trykeeply.live/";
     private const string DefaultCheckoutUrl = "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
     private readonly string _baseUrl;
@@ -20,6 +20,10 @@ internal sealed class LicenseClient
         using var json = File.Exists(config) ? JsonDocument.Parse(File.ReadAllText(config)) : null;
         var configuredApi = json?.RootElement.TryGetProperty("apiBaseUrl", out var api) == true ? api.GetString() : null;
         var configuredCheckout = json?.RootElement.TryGetProperty("checkoutUrl", out var checkout) == true ? checkout.GetString() : null;
+#if !DEBUG
+        if (Uri.TryCreate(configuredApi, UriKind.Absolute, out var configuredUri) && configuredUri.IsLoopback)
+            configuredApi = null;
+#endif
         _baseUrl = string.IsNullOrWhiteSpace(configuredApi) ? DefaultApiBaseUrl : configuredApi;
         CheckoutUrl = string.IsNullOrWhiteSpace(configuredCheckout) ? DefaultCheckoutUrl : configuredCheckout;
         _baseUrl = _baseUrl.TrimEnd('/');

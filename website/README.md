@@ -9,7 +9,7 @@ This is a Next.js App Router site designed for Vercel. Run `npm install`, copy `
 3. Set `SUPPORT_EMAIL` and `PUBLISHER_NAME`. Review the policy pages and set `GOVERNING_LAW` if you want to state a particular jurisdiction. Configure the Creem product terms to match Keeply's 14-calendar-day refund policy.
 4. Push the project to a Git provider, import it into Vercel, and set the Vercel project root to `website`. Add the environment variables in the Vercel project settings for Preview and Production. Vercel provides the deployment HTTPS URL. Configure `licensing.json` next to the desktop executable with the public base URL and hosted checkout URL:
 
-   `{ "apiBaseUrl": "https://your-domain.example/", "checkoutUrl": "https://www.creem.io/payment/your-checkout" }`
+   `{ "apiBaseUrl": "https://www.trykeeply.live/", "checkoutUrl": "https://www.creem.io/payment/your-checkout" }`
 
 5. In the Creem test environment, test purchase delivery, activation limit, deactivation, invalid keys, and the exact API response fields before enabling live checkout. Keep the Creem private key only in Vercel server environment variables; never use a `NEXT_PUBLIC_` prefix for it.
 
