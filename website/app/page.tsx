@@ -59,7 +59,7 @@ export default function HomePage() {
           <details><summary>Can I use my license without internet?</summary><p>Internet is needed for initial activation and online deactivation. After activation, that PC stays unlocked while offline.</p></details>
           <details><summary>How do I move my license to another PC?</summary><p>Deactivate a PC while online, then activate on the new PC. Creem enforces the three-PC activation limit.</p></details>
           <details><summary>Does Keeply have a money-back guarantee?</summary><p>Yes. Request a full refund within 14 calendar days of purchase by emailing our support team. See the <a href="/refunds">refund policy</a> for details.</p></details>
-          <details><summary>What image types are supported?</summary><p>JPG, JPEG, PNG, and WebP. WebP preview support depends on the Windows WebP Image Extension.</p></details>
+          <details><summary>What image types are supported?</summary><p>JPG, JPEG, PNG, WebP, BMP, GIF, and TIFF. WebP preview support depends on the Windows WebP Image Extension. Animated GIFs and multi-page TIFFs preview their first frame or page.</p></details>
         </div></section>
       </main>
     </SiteFrame>

@@ -14,7 +14,10 @@ namespace PhotoKeepKill;
 
 public partial class MainWindow : Window
 {
-    private static readonly HashSet<string> Supported = new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".webp" };
+    private static readonly HashSet<string> Supported = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff"
+    };
     private readonly List<string> _photos = [];
     private readonly Stack<TriageAction> _actions = new();
     private int _index = -1;
@@ -104,7 +107,7 @@ public partial class MainWindow : Window
             EmptyPanel.Visibility = noFolder || emptyFolder ? Visibility.Visible : Visibility.Collapsed;
             EmptyHeading.Text = emptyFolder ? "No supported photos here." : "A lighter photo folder starts here.";
             EmptyDescription.Text = emptyFolder
-                ? "Choose a folder with JPG, JPEG, PNG, or WebP photos."
+                ? "Choose a folder with JPG, JPEG, PNG, WebP, BMP, GIF, or TIFF photos."
                 : "Choose a folder or drop it anywhere in this window. Your photos stay on this PC.";
             EndPanel.Visibility = _sourceFolder is not null && _photos.Count > 0 && !hasPhoto ? Visibility.Visible : Visibility.Collapsed;
             PhotoImage.Visibility = hasPhoto ? Visibility.Visible : Visibility.Collapsed;
