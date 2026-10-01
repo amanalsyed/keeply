@@ -9,6 +9,9 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <RootNamespace>PhotoKeepKill</RootNamespace>
     <AssemblyName>Keeply</AssemblyName>
+    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
     <ApplicationIcon>assets\Keeply.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

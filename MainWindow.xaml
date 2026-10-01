@@ -4,21 +4,23 @@
         Title="Keeply" Width="1180" Height="820" MinWidth="760" MinHeight="560"
         Icon="{StaticResource KeeplyIcon}"
         Background="{StaticResource Canvas}" Foreground="#F4F5F5" WindowStartupLocation="CenterScreen"
-        AllowDrop="True" DragEnter="Window_DragEnter" Drop="Window_Drop" KeyDown="Window_KeyDown">
+        AllowDrop="True" DragEnter="Window_DragEnter" Drop="Window_Drop" KeyDown="Window_KeyDown" Loaded="Window_Loaded" Closing="Window_Closing">
   <Grid Margin="28">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Grid Grid.Row="0" Margin="0,0,0,18">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <Image Source="{StaticResource KeeplyIcon}" Width="25" Height="25" Margin="0,0,9,0"/>
         <TextBlock Text="Keeply" FontSize="13" FontWeight="Bold" Foreground="#8BE0BC"/>
                       </StackPanel>
       <Button Grid.Column="1" Content="Choose folder" Click="ChooseFolder_Click" Margin="0,0,10,0"/>
       <Button x:Name="AlbumFolderButton" Grid.Column="2" Content="Album: Choose" Click="ChangeAlbum_Click" Margin="0,0,10,0" ToolTip="Choose or change the album destination"/>
-      <Button x:Name="SoundToggleButton" Grid.Column="3" Content="Sound: On" Click="SoundToggle_Click" Margin="0,0,10,0"/>
-      <Button x:Name="MotionModeButton" Grid.Column="4" Content="Motion: Smooth" Click="MotionMode_Click" Margin="0,0,10,0" ToolTip="Click to cycle Smooth, Standard, and Reduced motion"/>
-      <Button x:Name="LicenseButton" Grid.Column="5" Content="Free · 0/3 folders" Click="License_Click" Margin="0,0,10,0" ToolTip="View free allowance or manage a lifetime license"/>
-      <Button Grid.Column="6" Content="⛶" ToolTip="Toggle fullscreen (F11)" Click="Fullscreen_Click" Padding="13,9"/>
+      <Button x:Name="QuickFoldersButton" Grid.Column="3" Content="Quick folders · 0/9" Click="QuickFolders_Click" Margin="0,0,10,0" ToolTip="Assign destination folders to number keys 1–9"/>
+      <Button x:Name="SoundToggleButton" Grid.Column="4" Content="Sound: On" Click="SoundToggle_Click" Margin="0,0,10,0"/>
+      <Button x:Name="MotionModeButton" Grid.Column="5" Content="Motion: Smooth" Click="MotionMode_Click" Margin="0,0,10,0" ToolTip="Click to cycle Smooth, Standard, and Reduced motion"/>
+      <Button x:Name="LicenseButton" Grid.Column="6" Content="Free · 0/3 folders" Click="License_Click" Margin="0,0,10,0" ToolTip="View free allowance or manage a lifetime license"/>
+      <Button Grid.Column="7" Content="Find duplicates" Click="DuplicateFinder_Click" Margin="0,0,10,0" ToolTip="Scan this folder for exact and visually similar photos"/>
+      <Button Grid.Column="8" Content="⛶" ToolTip="Toggle fullscreen (F11)" Click="Fullscreen_Click" Padding="13,9"/>
     </Grid>
     <Border Grid.Row="1" Background="#0A0B0D" BorderBrush="#222629" BorderThickness="1" CornerRadius="16" ClipToBounds="True"
             DragEnter="Window_DragEnter" Drop="Window_Drop">
@@ -34,6 +36,10 @@
           <TextBlock Text="This folder is all caught up." Foreground="{StaticResource Muted}" FontSize="15" Margin="0,10,0,8" TextAlignment="Center"/>
           <TextBlock x:Name="FinishStatsText" Foreground="#C5CFCA" FontSize="13" Margin="0,0,0,22" TextAlignment="Center"/>
           <Button Content="Choose another folder" Click="ChooseFolder_Click" HorizontalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel x:Name="UnavailablePanel" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="480">
+          <TextBlock Text="This photo isn't available in its original folder." FontSize="20" FontWeight="SemiBold" TextAlignment="Center"/>
+          <TextBlock x:Name="UnavailableDescription" Text="Check the folder or use Undo if this photo was sent to the Recycle Bin." Foreground="{StaticResource Muted}" FontSize="14" TextAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0"/>
         </StackPanel>
         <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,18" Background="#D9111315" CornerRadius="9" Padding="12,7">
           <TextBlock x:Name="FileNameText" FontSize="13" Foreground="#D6DADD" TextTrimming="CharacterEllipsis" MaxWidth="650"/>
@@ -54,6 +60,7 @@
           <TextBlock x:Name="FolderText" Text="Choose a folder to begin" FontSize="12" Foreground="{StaticResource Muted}" Margin="13,4,0,0" TextTrimming="CharacterEllipsis" MaxWidth="360"/>
         </StackPanel>
         <TextBlock x:Name="ActionCountsText" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
+        <TextBlock x:Name="QuickFoldersHint" FontSize="10" Foreground="{StaticResource Muted}" Margin="0,3,0,0"/>
        </StackPanel>
        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
         <Button x:Name="PreviousButton" Content="←  Previous" Click="Previous_Click" Margin="0,0,8,0" ToolTip="Left arrow"/>

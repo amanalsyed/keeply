@@ -20,18 +20,24 @@ public partial class MainWindow : Window
     };
     private readonly List<string> _photos = [];
     private readonly Stack<TriageAction> _actions = new();
+    private readonly Dictionary<string, TriageAction> _completedActions = new(StringComparer.OrdinalIgnoreCase);
     private int _index = -1;
     private string? _sourceFolder;
     private string? _albumFolder;
+    private string _queueFingerprint = "";
     private bool _loading;
     private bool _fullscreen;
     private bool _soundEnabled = true;
     private MotionMode _motionMode = MotionMode.Smooth;
     private readonly LocalLicenseStore _licenseStore;
     private readonly LicenseClient _licenseClient = new();
+    private readonly ResumeSessionStore _resumeStore = new();
+    private readonly QuickFolderStore _quickFolderStore = new();
+    private Dictionary<int, string> _quickFolders = new();
     private WindowStyle _savedStyle;
     private ResizeMode _savedResize;
     private WindowState _savedState;
+    private bool _startupResumeChecked;
 
     public MainWindow()
     {
@@ -46,6 +52,33 @@ public partial class MainWindow : Window
     {
         using var dialog = new System.Windows.Forms.FolderBrowserDialog { Description = "Choose a folder of photos", UseDescriptionForTitle = true, ShowNewFolderButton = false };
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK) await LoadFolderAsync(dialog.SelectedPath);
+    }
+
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_startupResumeChecked) return;
+        _startupResumeChecked = true;
+        try
+        {
+            _quickFolders = _quickFolderStore.Load();
+            UpdateQuickFoldersUi();
+        }
+        catch (Exception ex) { ShowError("Could not load saved Quick Folder shortcuts", ex); }
+        try
+        {
+            var recent = _resumeStore.LoadMostRecent();
+            if (recent is not null) await LoadFolderAsync(recent.FolderPath);
+        }
+        catch (Exception ex) { ShowError("Could not check for saved sorting progress", ex); }
+    }
+
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (PersistSession()) return;
+        var closeAnyway = MessageBox.Show(this,
+            "Keeply couldn't save this sorting session. If you close now, your latest progress may not be available next time. Close anyway?",
+            "Progress not saved", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        e.Cancel = closeAnyway != MessageBoxResult.Yes;
     }
 
     private void Window_DragEnter(object sender, DragEventArgs e) => e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
@@ -63,6 +96,8 @@ public partial class MainWindow : Window
     {
         try
         {
+            if (_sourceFolder is not null && !PersistSession()) return;
+            folder = Path.GetFullPath(folder);
             var files = Directory.EnumerateFiles(folder, "*", System.IO.SearchOption.TopDirectoryOnly)
                 .Where(p => Supported.Contains(Path.GetExtension(p)))
                 .OrderBy(p => Path.GetFileName(p), StringComparer.OrdinalIgnoreCase)
@@ -85,11 +120,104 @@ public partial class MainWindow : Window
                 }
                 if (!known) { _licenseStore.RememberFolder(hash); UpdateLicenseUi(); }
             }
-            _photos.Clear(); _photos.AddRange(files); _actions.Clear(); _albumFolder = null; _sourceFolder = folder; _index = files.Count == 0 ? -1 : 0;
-            FolderText.Text = folder; UpdateAlbumFolderUi(); SetStatus(files.Count == 0 ? "No supported photos in this folder." : "");
+
+            ResumeSession? saved;
+            try { saved = _resumeStore.Load(folder); }
+            catch (Exception ex)
+            {
+                var fresh = MessageBox.Show(this,
+                    $"Keeply couldn't read the saved progress for this folder. Your photos are unchanged. Start a fresh sorting session?\n\n{ex.Message}",
+                    "Saved progress unavailable", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (fresh != MessageBoxResult.Yes) return;
+                _resumeStore.Delete(folder);
+                saved = null;
+            }
+            if (saved is not null && saved.Actions.Any(action => !Enum.IsDefined(typeof(ActionKind), action.Kind)))
+            {
+                var fresh = MessageBox.Show(this,
+                    "The saved session contains an unsupported action. Your photos are unchanged. Start a fresh sorting session for this folder?",
+                    "Saved progress unavailable", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (fresh != MessageBoxResult.Yes) return;
+                _resumeStore.Delete(folder);
+                saved = null;
+            }
+            var choice = saved is not null && (saved.Actions.Count > 0 || saved.CurrentIndex > 0)
+                ? ShowResumePrompt(saved)
+                : ResumeChoice.Resume;
+            if (choice == ResumeChoice.Cancel) { SetStatus("Kept your current sorting session open."); return; }
+
+            _photos.Clear();
+            _actions.Clear();
+            _completedActions.Clear();
+            _albumFolder = null;
+            _sourceFolder = folder;
+            if (saved is not null && choice == ResumeChoice.Resume)
+            {
+                var queue = files.Concat(saved.Actions.Select(action => action.SourcePath))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(path => Path.GetFileName(path), StringComparer.Ordinal)
+                    .ToList();
+                var currentPhoto = saved.CurrentPhotoPath;
+                var index = currentPhoto is null ? -1 : queue.FindIndex(path => StringComparer.OrdinalIgnoreCase.Equals(path, currentPhoto));
+                if (index < 0) index = Math.Clamp(saved.CurrentIndex, 0, queue.Count);
+                _photos.AddRange(queue);
+                _queueFingerprint = ComputeQueueFingerprint(queue);
+                foreach (var action in saved.Actions)
+                {
+                    var restoredAction = new TriageAction((ActionKind)action.Kind, action.SourcePath, action.TargetPath, Math.Max(0, action.Index));
+                    _actions.Push(restoredAction);
+                    _completedActions[restoredAction.SourcePath] = restoredAction;
+                }
+                _albumFolder = saved.AlbumFolder;
+                if (queue.Count == 0) _index = -1;
+                else if (index >= queue.Count) _index = FindNextPendingIndex(0);
+                else _index = _completedActions.ContainsKey(queue[Math.Max(0, index)])
+                    ? FindNextPendingIndex(Math.Max(0, index) + 1)
+                    : Math.Clamp(index, 0, queue.Count - 1);
+                var queueChanged = !string.IsNullOrWhiteSpace(saved.QueueFingerprint) &&
+                    !StringComparer.Ordinal.Equals(saved.QueueFingerprint, _queueFingerprint);
+                SetStatus($"Resumed: {_actions.Count:N0} of {_photos.Count:N0} completed" +
+                    (queueChanged ? " · folder contents changed since the last session" : ""));
+            }
+            else
+            {
+                if (saved is not null) _resumeStore.Delete(folder);
+                _photos.AddRange(files);
+                _queueFingerprint = ComputeQueueFingerprint(_photos);
+                _index = files.Count == 0 ? -1 : 0;
+                SetStatus(files.Count == 0 ? "No supported photos in this folder." : "Started a fresh sorting session.");
+            }
+            FolderText.Text = folder; UpdateAlbumFolderUi();
+            PersistSession();
             await ShowCurrentAsync();
         }
         catch (Exception ex) { ShowError("Could not open this folder", ex); }
+    }
+
+    private ResumeChoice ShowResumePrompt(ResumeSession session)
+    {
+        var total = session.QueueCount;
+        var folderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(session.FolderPath));
+        var dialog = new Window
+        {
+            Owner = this, Title = "Continue sorting?", Width = 460, Height = 260,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, ResizeMode = ResizeMode.NoResize,
+            Background = System.Windows.Media.Brushes.White, Foreground = System.Windows.Media.Brushes.Black
+        };
+        var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(24) };
+        panel.Children.Add(new System.Windows.Controls.TextBlock { Text = "Pick up where you left off", FontSize = 21, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 10) });
+        panel.Children.Add(new System.Windows.Controls.TextBlock { Text = $"{folderName}\n{session.Actions.Count:N0} of {total:N0} photos completed. Your progress is saved on this PC.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 20) });
+        var buttons = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var resume = new System.Windows.Controls.Button { Content = "Resume", MinWidth = 95, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var restart = new System.Windows.Controls.Button { Content = "Start over", MinWidth = 95, Margin = new Thickness(0, 0, 8, 0) };
+        var cancel = new System.Windows.Controls.Button { Content = "Cancel", MinWidth = 80, IsCancel = true };
+        buttons.Children.Add(resume); buttons.Children.Add(restart); buttons.Children.Add(cancel); panel.Children.Add(buttons); dialog.Content = panel;
+        var result = ResumeChoice.Cancel;
+        resume.Click += (_, _) => { result = ResumeChoice.Resume; dialog.Close(); };
+        restart.Click += (_, _) => { result = ResumeChoice.StartOver; dialog.Close(); };
+        dialog.ShowDialog();
+        return result;
     }
 
     private async Task ShowCurrentAsync()
@@ -103,14 +231,16 @@ public partial class MainWindow : Window
             var hasPhoto = _index >= 0 && _index < _photos.Count;
             UpdateSessionUi();
             var noFolder = _sourceFolder is null;
-            var emptyFolder = !noFolder && _photos.Count == 0;
+            var emptyFolder = !noFolder && _photos.Count == 0 && _actions.Count == 0;
             EmptyPanel.Visibility = noFolder || emptyFolder ? Visibility.Visible : Visibility.Collapsed;
             EmptyHeading.Text = emptyFolder ? "No supported photos here." : "A lighter photo folder starts here.";
             EmptyDescription.Text = emptyFolder
                 ? "Choose a folder with JPG, JPEG, PNG, WebP, BMP, GIF, or TIFF photos."
                 : "Choose a folder or drop it anywhere in this window. Your photos stay on this PC.";
             EndPanel.Visibility = _sourceFolder is not null && _photos.Count > 0 && !hasPhoto ? Visibility.Visible : Visibility.Collapsed;
-            PhotoImage.Visibility = hasPhoto ? Visibility.Visible : Visibility.Collapsed;
+            var photoExists = hasPhoto && File.Exists(_photos[_index]);
+            PhotoImage.Visibility = photoExists ? Visibility.Visible : Visibility.Collapsed;
+            UnavailablePanel.Visibility = hasPhoto && !photoExists ? Visibility.Visible : Visibility.Collapsed;
             FileNameText.Visibility = hasPhoto ? Visibility.Visible : Visibility.Collapsed;
             if (!hasPhoto)
             {
@@ -120,6 +250,17 @@ public partial class MainWindow : Window
             }
             var path = _photos[_index];
             FileNameText.Text = Path.GetFileName(path);
+            if (!photoExists)
+            {
+                ResetPhotoAnimation();
+                PhotoImage.Source = null;
+                UnavailableDescription.Text = _completedActions.TryGetValue(path, out var completed) && completed.Kind == ActionKind.Trash
+                    ? "This photo is in the Windows Recycle Bin. Use U to undo the latest action."
+                    : "The file is missing from this folder. Check the folder or reopen it after restoring the file.";
+                SetStatus(UnavailableDescription.Text);
+                UpdateSessionUi();
+                return;
+            }
             var nextPhoto = await DecodePhotoAsync(path);
             PhotoImage.BeginAnimation(OpacityProperty, null);
             PhotoImage.RenderTransform = System.Windows.Media.Transform.Identity;
@@ -130,6 +271,13 @@ public partial class MainWindow : Window
             {
                 EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = EasingMode.EaseOut }
             });
+            if (_completedActions.TryGetValue(path, out var priorAction))
+                SetStatus(priorAction.Kind switch
+                {
+                    ActionKind.Keep => "Already kept. U reverses the most recent action.",
+                    ActionKind.Album => "Already added to the album. U reverses the most recent action.",
+                    _ => "Already processed. U reverses the most recent action."
+                });
         }
         catch (Exception ex)
         {
@@ -151,10 +299,20 @@ public partial class MainWindow : Window
         return bitmap;
     });
 
-    private async Task ProcessAsync(ActionKind kind)
+    private async Task ProcessAsync(ActionKind kind, string? quickFolderDestination = null, int? quickFolderShortcut = null)
     {
         if (_loading || _index < 0 || _index >= _photos.Count) return;
         var photo = _photos[_index];
+        if (_completedActions.ContainsKey(photo))
+        {
+            SetStatus("This photo was already processed. Use U to undo the most recent action first.");
+            return;
+        }
+        if (!File.Exists(photo))
+        {
+            SetStatus("This photo is unavailable in its original folder. Restore it or choose another photo.");
+            return;
+        }
         _loading = true;
         try
         {
@@ -165,20 +323,50 @@ public partial class MainWindow : Window
             }
             else if (kind == ActionKind.Album)
             {
-                if (!EnsureAlbumFolder()) return;
-                var albumTarget = UniquePath(_albumFolder!, Path.GetFileName(photo));
+                string destination;
+                if (quickFolderDestination is not null)
+                {
+                    if (!Directory.Exists(quickFolderDestination))
+                    {
+                        SetStatus("That Quick Folder destination is unavailable. Choose a new folder for this shortcut.");
+                        return;
+                    }
+                    destination = quickFolderDestination;
+                }
+                else
+                {
+                    if (!EnsureAlbumFolder()) return;
+                    destination = _albumFolder!;
+                }
+                var albumTarget = UniquePath(destination, Path.GetFileName(photo));
                 target = albumTarget;
                 await Task.Run(() => File.Copy(photo, albumTarget));
             }
-            _actions.Push(new TriageAction(kind, photo, target, _index));
+            var action = new TriageAction(kind, photo, target, _index);
+            try { _resumeStore.RecordAction(_sourceFolder!, ToSavedAction(action)); }
+            catch (Exception ex) { ShowError("Photo processed, but its resume history could not be saved", ex); }
+            _actions.Push(action);
+            _completedActions[photo] = action;
+            _index = FindNextPendingIndex(_index + 1);
+            SetStatus("");
+            PersistSession();
             PlayActionSound(kind);
             await AnimateActionAsync(kind);
-            _index++;
-            SetStatus("");
             await ShowCurrentAsync();
+            if (quickFolderShortcut.HasValue && quickFolderDestination is not null)
+                SetStatus($"Copied to {DisplayFolderName(quickFolderDestination)} using shortcut {quickFolderShortcut.Value}.");
         }
         catch (Exception ex) { ShowError(kind == ActionKind.Trash ? "Could not move this photo to the Recycle Bin" : "Could not process this photo", ex); }
         finally { _loading = false; }
+    }
+
+    private int FindNextPendingIndex(int startIndex)
+    {
+        for (var i = Math.Max(0, startIndex); i < _photos.Count; i++)
+            if (!_completedActions.ContainsKey(_photos[i])) return i;
+        for (var i = 0; i < Math.Min(Math.Max(0, startIndex), _photos.Count); i++)
+            if (!_completedActions.ContainsKey(_photos[i])) return i;
+        return _photos.Count;
     }
 
     private bool EnsureAlbumFolder()
@@ -202,13 +390,18 @@ public partial class MainWindow : Window
         {
             if (action.Kind == ActionKind.Album && action.TargetPath is not null && File.Exists(action.TargetPath)) File.Delete(action.TargetPath);
             if (action.Kind == ActionKind.Trash) RecycleBinRestorer.Restore(action.SourcePath);
-            _actions.Pop(); _index = Math.Clamp(action.Index, 0, Math.Max(0, _photos.Count - 1));
+            try { _resumeStore.RecordUndo(_sourceFolder!, action.SourcePath); }
+            catch (Exception ex) { ShowError("Photo restored, but its resume history could not be updated", ex); }
+            _actions.Pop();
+            _completedActions.Remove(action.SourcePath);
+            _index = Math.Clamp(action.Index, 0, Math.Max(0, _photos.Count - 1));
             SetStatus(action.Kind switch
             {
                 ActionKind.Keep => "Undo complete: photo returned to the queue.",
                 ActionKind.Trash => "Undo complete: photo restored from the Recycle Bin.",
                 _ => "Undo complete: album copy removed."
             });
+            PersistSession();
             await ShowCurrentAsync();
         }
         catch (Exception ex) { ShowError("Could not undo the last action", ex); }
@@ -229,16 +422,61 @@ public partial class MainWindow : Window
         if (_loading || _photos.Count == 0) return;
         var nextIndex = _index + delta;
         if (nextIndex < 0 || nextIndex >= _photos.Count) return;
-        _index = nextIndex; SetStatus(""); await ShowCurrentAsync();
+        _index = nextIndex; SetStatus(""); PersistSession(); await ShowCurrentAsync();
     }
     private async void Keep_Click(object sender, RoutedEventArgs e) => await ProcessAsync(ActionKind.Keep);
     private async void Trash_Click(object sender, RoutedEventArgs e) => await ProcessAsync(ActionKind.Trash);
     private async void Album_Click(object sender, RoutedEventArgs e) => await ProcessAsync(ActionKind.Album);
 
+    private async Task RunQuickFolderShortcutAsync(int slot)
+    {
+        if (_loading || _index < 0 || _index >= _photos.Count) return;
+        var photo = _photos[_index];
+        if (_completedActions.ContainsKey(photo))
+        {
+            SetStatus("This photo was already processed. Use U to undo the most recent action first.");
+            return;
+        }
+
+        string destination;
+        if (_quickFolders.TryGetValue(slot, out var assigned) && Directory.Exists(assigned))
+        {
+            destination = assigned;
+        }
+        else
+        {
+            if (_quickFolders.ContainsKey(slot))
+                MessageBox.Show(this, $"The folder assigned to shortcut {slot} is unavailable. Choose a replacement folder.", "Quick Folder unavailable", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = $"Choose or create the destination for shortcut {slot}",
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = true,
+                SelectedPath = _quickFolders.TryGetValue(slot, out var previous) && Directory.Exists(previous) ? previous : ""
+            };
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            destination = Path.GetFullPath(dialog.SelectedPath);
+            var updated = new Dictionary<int, string>(_quickFolders) { [slot] = destination };
+            try { _quickFolderStore.Save(updated); }
+            catch (Exception ex) { ShowError($"Could not save shortcut {slot}", ex); return; }
+            _quickFolders = updated;
+            UpdateQuickFoldersUi();
+        }
+
+        await ProcessAsync(ActionKind.Album, destination, slot);
+    }
+
     private async void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.F11) { ToggleFullscreen(); e.Handled = true; return; }
         if (Keyboard.FocusedElement is System.Windows.Controls.TextBox) return;
+        if (Keyboard.Modifiers == ModifierKeys.None && TryGetShortcutNumber(e.Key, out var slot))
+        {
+            await RunQuickFolderShortcutAsync(slot);
+            e.Handled = true;
+            return;
+        }
         switch (e.Key)
         {
             case Key.K: await ProcessAsync(ActionKind.Keep); break;
@@ -252,7 +490,30 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    private static bool TryGetShortcutNumber(Key key, out int slot)
+    {
+        slot = key switch
+        {
+            Key.D1 or Key.NumPad1 => 1,
+            Key.D2 or Key.NumPad2 => 2,
+            Key.D3 or Key.NumPad3 => 3,
+            Key.D4 or Key.NumPad4 => 4,
+            Key.D5 or Key.NumPad5 => 5,
+            Key.D6 or Key.NumPad6 => 6,
+            Key.D7 or Key.NumPad7 => 7,
+            Key.D8 or Key.NumPad8 => 8,
+            Key.D9 or Key.NumPad9 => 9,
+            _ => 0
+        };
+        return slot != 0;
+    }
+
     private void Fullscreen_Click(object sender, RoutedEventArgs e) => ToggleFullscreen();
+    private void DuplicateFinder_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new DuplicateFinderWindow(_licenseStore, () => License_Click(this, new RoutedEventArgs())) { Owner = this };
+        window.ShowDialog();
+    }
     private void SoundToggle_Click(object sender, RoutedEventArgs e)
     {
         _soundEnabled = !_soundEnabled;
@@ -278,7 +539,36 @@ public partial class MainWindow : Window
             _albumFolder = dialog.SelectedPath;
             UpdateAlbumFolderUi();
             SetStatus("Album destination changed.");
+            PersistSession();
         }
+    }
+
+    private void QuickFolders_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new QuickFolderManagerWindow(_quickFolders) { Owner = this };
+        if (dialog.ShowDialog() != true) return;
+        var updated = dialog.Assignments.ToDictionary(pair => pair.Key, pair => pair.Value);
+        try { _quickFolderStore.Save(updated); }
+        catch (Exception ex) { ShowError("Could not save Quick Folder shortcuts", ex); return; }
+        _quickFolders = updated;
+        UpdateQuickFoldersUi();
+        SetStatus("Quick Folder shortcuts saved on this PC.");
+    }
+
+    private void UpdateQuickFoldersUi()
+    {
+        QuickFoldersButton.Content = $"Quick folders · {_quickFolders.Count}/9";
+        QuickFoldersHint.Text = "Press 1–9 to copy to the assigned folder · A uses the separate Album folder";
+        QuickFoldersButton.ToolTip = string.Join(Environment.NewLine,
+            Enumerable.Range(1, 9).Select(slot => _quickFolders.TryGetValue(slot, out var path)
+                ? $"{slot} = {DisplayFolderName(path)}{(Directory.Exists(path) ? "" : " (unavailable)")}"
+                : $"{slot} = not assigned"));
+    }
+
+    private static string DisplayFolderName(string path)
+    {
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+        return string.IsNullOrWhiteSpace(name) ? path : name;
     }
 
     private void UpdateLicenseUi()
@@ -355,6 +645,50 @@ public partial class MainWindow : Window
     private void SetStatus(string message) => StatusText.Text = message;
     private void ShowError(string title, Exception ex) { SetStatus($"{title}: {ex.Message}"); MessageBox.Show(this, $"{title}.\n\n{ex.Message}", "Keeply", MessageBoxButton.OK, MessageBoxImage.Warning); }
 
+    private bool PersistSession()
+    {
+        if (_sourceFolder is null) return true;
+        try
+        {
+            var currentPath = _index >= 0 && _index < _photos.Count ? _photos[_index] : null;
+            var session = new ResumeSession
+            {
+                FolderPath = _sourceFolder,
+                CurrentPhotoPath = currentPath,
+                CurrentIndex = Math.Clamp(_index, 0, _photos.Count),
+                AlbumFolder = _albumFolder,
+                QueueCount = _photos.Count,
+                QueueFingerprint = _queueFingerprint
+            };
+            _resumeStore.Save(session);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowError("Could not save sorting progress on this PC", ex);
+            return false;
+        }
+    }
+
+    private static SavedTriageAction ToSavedAction(TriageAction action) => new()
+    {
+        Kind = (int)action.Kind,
+        SourcePath = action.SourcePath,
+        TargetPath = action.TargetPath,
+        Index = action.Index
+    };
+
+    private static string ComputeQueueFingerprint(IEnumerable<string> paths)
+    {
+        using var hash = System.Security.Cryptography.IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
+        foreach (var path in paths)
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(path).ToUpperInvariant() + "\0");
+            hash.AppendData(bytes);
+        }
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
+
     private void UpdateAlbumFolderUi()
     {
         if (string.IsNullOrWhiteSpace(_albumFolder))
@@ -379,14 +713,15 @@ public partial class MainWindow : Window
     private void UpdateSessionUi()
     {
         var hasPhoto = _index >= 0 && _index < _photos.Count;
-        ProgressText.Text = hasPhoto
-            ? $"{_index + 1:N0} / {_photos.Count:N0}"
-            : _photos.Count == 0 ? "0 / 0" : $"{_photos.Count:N0} / {_photos.Count:N0}";
-        QueueProgressBar.Maximum = Math.Max(1, _photos.Count);
-        QueueProgressBar.Value = _photos.Count == 0 ? 0 : hasPhoto ? _index + 1 : _photos.Count;
-        PreviousButton.IsEnabled = hasPhoto && _index > 0;
+        var total = _photos.Count;
+        var current = hasPhoto ? _index + 1 : total;
+        ProgressText.Text = hasPhoto ? $"{current:N0} / {total:N0}" : $"{total:N0} / {total:N0}";
+        QueueProgressBar.Maximum = Math.Max(1, total);
+        QueueProgressBar.Value = total == 0 ? 0 : current;
+        PreviousButton.IsEnabled = _photos.Count > 0 && _index > 0;
         NextButton.IsEnabled = hasPhoto && _index < _photos.Count - 1;
-        KeepButton.IsEnabled = AlbumButton.IsEnabled = TrashButton.IsEnabled = hasPhoto;
+        var canProcess = hasPhoto && File.Exists(_photos[_index]) && !_completedActions.ContainsKey(_photos[_index]);
+        KeepButton.IsEnabled = AlbumButton.IsEnabled = TrashButton.IsEnabled = canProcess;
         UndoButton.IsEnabled = _actions.Count > 0;
         ActionCountsText.Text = _sourceFolder is null ? "" : FormatActionCounts();
         FinishStatsText.Text = FormatActionCounts();
@@ -464,6 +799,7 @@ public partial class MainWindow : Window
     }
 
     private enum ActionKind { Keep, Trash, Album }
+    private enum ResumeChoice { Resume, StartOver, Cancel }
     private enum MotionMode { Smooth, Standard, Reduced }
     private sealed record TriageAction(ActionKind Kind, string SourcePath, string? TargetPath, int Index);
 }

@@ -1,0 +1,85 @@
+<Window x:Class="PhotoKeepKill.DuplicateFinderWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Keeply · Duplicate Finder" Width="1120" Height="780" MinWidth="850" MinHeight="600"
+        WindowStartupLocation="CenterOwner" Background="#101214" Foreground="#F4F5F5" AllowDrop="True"
+        DragEnter="Window_DragEnter" Drop="Window_Drop">
+  <Grid Margin="24">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <Grid Grid.Row="0" Margin="0,0,0,18">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel>
+        <TextBlock Text="Find duplicates" FontSize="25" FontWeight="SemiBold"/>
+        <TextBlock Text="Compare exact copies and similar shots. Keeply never removes anything unless you choose it." Foreground="#A2A9AD" Margin="0,5,0,0"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="Choose folder" Click="ChooseFolder_Click" Margin="0,0,8,0"/>
+      <CheckBox x:Name="IncludeSubfoldersCheck" Grid.Column="2" Content="Include subfolders" VerticalAlignment="Center" Margin="8,0,16,0" Foreground="#D5DAD7"/>
+      <Button x:Name="ScanButton" Grid.Column="3" Content="Scan" Click="Scan_Click" Background="#245843" BorderBrush="#367A5D"/>
+    </Grid>
+    <Border Grid.Row="1" Background="#191C1F" CornerRadius="10" Padding="12,9" Margin="0,0,0,14">
+      <TextBlock x:Name="ScanStatus" Text="Choose or drop a folder to find duplicate groups. Scanning stays on this PC." Foreground="#C2CAC6" TextTrimming="CharacterEllipsis"/>
+    </Border>
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="285"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Border Grid.Column="0" Background="#191C1F" BorderBrush="#282D30" BorderThickness="1" CornerRadius="12" Padding="10">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="MATCH GROUPS" FontSize="11" FontWeight="Bold" Foreground="#8BE0BC" Margin="5,3,0,10"/>
+          <ListBox x:Name="GroupsList" SelectionChanged="GroupsList_SelectionChanged" Background="Transparent" BorderThickness="0" Foreground="#F4F5F5">
+            <ListBox.ItemContainerStyle>
+              <Style TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="11,10"/><Setter Property="Margin" Value="0,0,0,6"/>
+                <Setter Property="Background" Value="#202427"/><Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Bd" Property="Background" Value="#284336"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+              </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center"><TextBlock Text="{Binding Title}" FontWeight="SemiBold"/><TextBlock Text="{Binding Subtitle}" Foreground="#A2A9AD" FontSize="12" Margin="0,3,0,0"/></StackPanel>
+                  <Button Grid.Column="1" Content="🗑" FontFamily="Segoe UI Symbol" FontSize="15" Padding="8,5" Margin="8,0,0,0"
+                          Background="#3B2527" BorderBrush="#684044" Foreground="#F0AAAA" ToolTip="Move every photo in this group to the Recycle Bin"
+                          Click="GroupTrash_Click"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+      <Border Grid.Column="2" Background="#191C1F" BorderBrush="#282D30" BorderThickness="1" CornerRadius="12" Padding="16">
+        <DockPanel>
+          <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="SelectionText" VerticalAlignment="Center" Foreground="#A2A9AD" Text="Select a group to compare its photos."/>
+            <Button x:Name="SelectAllButton" Grid.Column="1" Content="Select all" Click="SelectAll_Click" IsEnabled="False" Margin="0,0,8,0"/>
+            <Button x:Name="UndoButton" Grid.Column="2" Content="Undo removal" Click="Undo_Click" IsEnabled="False" Margin="0,0,8,0"/>
+            <Button x:Name="TrashSelectedButton" Grid.Column="3" Content="Move selected to Recycle Bin" Click="TrashSelected_Click" IsEnabled="False" Background="#492B2C" BorderBrush="#754345"/>
+          </Grid>
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="PhotosItems">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Width="265" Margin="0,0,12,12" Padding="10" Background="#202427" BorderBrush="#303639" BorderThickness="1" CornerRadius="10">
+                    <StackPanel>
+                      <Border Height="190" Background="#0D0F10" CornerRadius="6" ClipToBounds="True">
+                        <Image Source="{Binding Preview}" Stretch="Uniform"/>
+                      </Border>
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="0,9,0,2" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/>
+                      <TextBlock Text="{Binding Details}" FontSize="11" Foreground="#A2A9AD" TextTrimming="CharacterEllipsis"/>
+                      <CheckBox Content="Select to move to Recycle Bin" IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#E6E9E7" Margin="0,10,0,0"/>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <StackPanel x:Name="ReviewEmptyPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Visible">
+            <TextBlock x:Name="ReviewEmptyText" Text="Choose a folder and scan to begin." Foreground="#A2A9AD" FontSize="16" TextAlignment="Center"/>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+    </Grid>
+    <ProgressBar x:Name="ScanProgress" Grid.Row="3" Height="4" Margin="0,14,0,0" Minimum="0" Maximum="100" Value="0" Background="#292D30" Foreground="#8BE0BC" BorderThickness="0"/>
+  </Grid>
+</Window>

@@ -1,0 +1,25 @@
+<Window x:Class="PhotoKeepKill.QuickFolderManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Quick Folder Shortcuts" Width="650" Height="600" MinWidth="580" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        Background="#F7F8F8" Foreground="#181B1A">
+  <Grid Margin="22">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0" Margin="0,0,0,14">
+      <TextBlock Text="Quick Folder Shortcuts" FontSize="21" FontWeight="SemiBold"/>
+      <TextBlock Text="Assign destinations to keys 1–9. Press a number while sorting to copy the photo there and continue. A keeps using its separate Album folder." Foreground="#59615D" TextWrapping="Wrap" Margin="0,6,0,0"/>
+    </StackPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel x:Name="RowsPanel"/>
+    </ScrollViewer>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="Cancel" IsCancel="True" MinWidth="86" Margin="0,0,8,0"/>
+      <Button Content="Save shortcuts" IsDefault="True" MinWidth="120" Click="Save_Click"/>
+    </StackPanel>
+  </Grid>
+</Window>

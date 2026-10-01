@@ -24,8 +24,10 @@ ShowUnInstDetails show
 VIProductVersion "${APP_VERSION}.0"
 VIAddVersionKey "ProductName" "Keeply"
 VIAddVersionKey "ProductVersion" "${APP_VERSION}"
+VIAddVersionKey "FileVersion" "${APP_VERSION}.0"
 VIAddVersionKey "FileDescription" "Keeply photo sorting app installer"
 VIAddVersionKey "CompanyName" "Keeply"
+VIAddVersionKey "LegalCopyright" "Copyright (c) Keeply"
 
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\Keeply.exe"
