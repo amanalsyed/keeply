@@ -16,31 +16,31 @@ export const metadata: Metadata = {
   verification: {
     google: "ko6lTMYRgQP26YnDoBNNGnL41zaow8acpoJIcZ8S34Y",
   },
-  title: "Keeply — Sort your photos, one at a time",
+  title: "Keeply — Sort, compare, compress, and convert photos",
   description:
-    "A simple Windows app to keep, trash, or save photos to an album. Your photos stay on your PC.",
+    "A local Windows photo toolkit to sort photos, find duplicates, compress files, and convert image formats. Your photos stay on your PC.",
   icons: { icon: "/keeply-logo.svg" },
   openGraph: {
     type: "website",
     url: "/",
     siteName: "Keeply",
-    title: "Keeply — Sort your photos, one at a time",
+    title: "Keeply — Sort, compare, compress, and convert photos",
     description:
-      "A simple Windows app to keep, trash, or save photos to an album. Your photos stay on your PC.",
+      "A local Windows photo toolkit to sort photos, find duplicates, compress files, and convert image formats. Your photos stay on your PC.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Keeply — Sort your photos, one at a time. Your photos stay on your PC.",
+        alt: "Keeply — Sort, compare, compress, and convert photos locally on Windows.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Keeply — Sort your photos, one at a time",
+    title: "Keeply — Sort, compare, compress, and convert photos",
     description:
-      "A simple Windows app to keep, trash, or save photos to an album. Your photos stay on your PC.",
+      "A local Windows photo toolkit to sort photos, find duplicates, compress files, and convert image formats. Your photos stay on your PC.",
     images: ["/og-image.png"],
   },
 };

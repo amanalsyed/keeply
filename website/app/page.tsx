@@ -42,10 +42,23 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section id="updates" className="section wrap updates" data-reveal>
+          <div className="section-head"><div className="eyebrow">WHAT’S NEW · VERSION 1.0.4</div><h2>More ways to finish your photo backlog.</h2><p>Keeply now helps with the whole cleanup: sort, compare, compress, and convert—right on your Windows PC.</p></div>
+          <div className="update-grid">
+            <article className="update-card"><span className="update-type">FIND THE BEST SHOT</span><h3>Review duplicate groups</h3><p>Find exact copies and visually similar shots, compare them side by side, then choose which photos to send to the Recycle Bin. Keeply never deletes a group automatically.</p></article>
+            <article className="update-card"><span className="update-type">MAKE SMALLER COPIES</span><h3>Bulk compress photos</h3><p>Compress a folder of images into a separate destination. Choose JPEG quality and keep your originals exactly where they are.</p></article>
+            <article className="update-card"><span className="update-type">CHANGE FORMATS</span><h3>Convert to WebP, JPEG, or PNG</h3><p>Convert image folders in one run. Choose lossy or lossless WebP, set JPEG quality, or use PNG when you need transparency.</p></article>
+            <article className="update-card"><span className="update-type">PICK UP LATER</span><h3>Resume where you stopped</h3><p>Return to a sorting session and continue from your saved progress instead of starting over.</p></article>
+            <article className="update-card"><span className="update-type">SORT FASTER</span><h3>Quick folder keys</h3><p>Assign folders to number keys 1–9, then send a photo to the right destination with one press.</p></article>
+            <article className="update-card"><span className="update-type">MORE IMAGE TYPES</span><h3>Work with more formats</h3><p>Keeply supports JPG, JPEG, PNG, WebP, BMP, GIF, and TIFF for its photo workflows. Animated GIFs and multi-page TIFFs are preserved or skipped by tools that cannot safely process all frames or pages.</p></article>
+          </div>
+          <p className="updates-note">Every tool works locally. Converted and compressed files are saved as copies, and duplicate removal always requires your choice.</p>
+        </section>
+
         <section className="privacy-band" id="privacy" data-reveal><div className="wrap privacy-inner"><div><div className="eyebrow">PRIVATE BY DEFAULT</div><h2>Your photos stay yours.</h2><p>Images are opened and processed on your Windows PC. Keep leaves originals in place, Trash uses the Windows Recycle Bin, and Album copies to a folder you choose. There is no photo cloud or proprietary library.</p></div><div className="privacy-stamp"><span>LOCAL</span><b>100%</b><span>PHOTO PROCESSING</span></div></div></section>
 
         <section id="pricing" className="section wrap pricing" data-reveal>
-          <div className="section-head"><div className="eyebrow">STRAIGHTFORWARD PRICING</div><h2>Start free. Unlock the whole folder.</h2><p>Try the full workflow on three folders. Upgrade once when you’re ready to sort without limits.</p></div>
+          <div className="section-head"><div className="eyebrow">STRAIGHTFORWARD PRICING</div><h2>Start free. Unlock unlimited sorting.</h2><p>Try Keeply’s sorting workflow on up to three folders. Upgrade once when you’re ready to sort without folder or photo-count limits.</p></div>
           <div className="plans">
             <article className="plan"><div className="plan-label">FREE</div><div className="price">$0</div><p>Everything you need to see if it fits your workflow.</p><ul><li>3 unique folders on this PC</li><li>Up to 100 supported photos per folder</li><li>Keep, Recycle Bin, and album actions</li><li>Undo and keyboard shortcuts</li><li>Local processing, no account</li></ul><a className="button outline" href={downloadUrl} download="Keeply-Setup.exe" data-ga-event="download_app" data-ga-location="pricing_free">{downloadText}</a></article>
             <article className="plan featured"><div className="ribbon">ONE-TIME PURCHASE</div><div className="plan-label">LIFETIME</div><div className="price">$6 <small>once</small></div><p>One purchase. Keep sorting without limits.</p><ul><li>Unlimited folders and photos</li><li>Lifetime license</li><li>Activate on up to 3 PCs</li><li>Activated PCs work offline</li><li>All Free features included</li></ul><PurchaseButton fallbackUrl={checkoutUrl} /><div className="checkout-note">Secure checkout powered by Creem</div></article>
@@ -59,6 +72,8 @@ export default function HomePage() {
           <details><summary>Can I use my license without internet?</summary><p>Internet is needed for initial activation and online deactivation. After activation, that PC stays unlocked while offline.</p></details>
           <details><summary>How do I move my license to another PC?</summary><p>Deactivate a PC while online, then activate on the new PC. Creem enforces the three-PC activation limit.</p></details>
           <details><summary>Does Keeply have a money-back guarantee?</summary><p>Yes. Request a full refund within 14 calendar days of purchase by emailing our support team. See the <a href="/refunds">refund policy</a> for details.</p></details>
+          <details><summary>Can Keeply compress and convert images?</summary><p>Yes. Bulk Compress creates smaller copies in another folder. Convert Images creates WebP, JPEG, or PNG copies. Your originals are not changed; animated GIFs and multi-page TIFFs are skipped when a tool cannot safely preserve all frames or pages.</p></details>
+          <details><summary>How does duplicate finding work?</summary><p>Keeply groups exact copies and visually similar shots so you can compare them. You select what to move to the Windows Recycle Bin; nothing is removed automatically.</p></details>
           <details><summary>What image types are supported?</summary><p>JPG, JPEG, PNG, WebP, BMP, GIF, and TIFF. WebP preview support depends on the Windows WebP Image Extension. Animated GIFs and multi-page TIFFs preview their first frame or page.</p></details>
         </div></section>
       </main>
