@@ -8,7 +8,7 @@
   <Grid Margin="28">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Grid Grid.Row="0" Margin="0,0,0,18">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <Image Source="{StaticResource KeeplyIcon}" Width="25" Height="25" Margin="0,0,9,0"/>
         <TextBlock Text="Keeply" FontSize="13" FontWeight="Bold" Foreground="#8BE0BC"/>
@@ -21,7 +21,8 @@
       <Button x:Name="LicenseButton" Grid.Column="6" Content="Free · 0/3 folders" Click="License_Click" Margin="0,0,10,0" ToolTip="View free allowance or manage a lifetime license"/>
       <Button Grid.Column="7" Content="Find duplicates" Click="DuplicateFinder_Click" Margin="0,0,10,0" ToolTip="Scan this folder for exact and visually similar photos"/>
       <Button Grid.Column="8" Content="Bulk compress" Click="BulkCompress_Click" Margin="0,0,10,0" ToolTip="Create compressed copies in another folder"/>
-      <Button Grid.Column="9" Content="⛶" ToolTip="Toggle fullscreen (F11)" Click="Fullscreen_Click" Padding="13,9"/>
+      <Button Grid.Column="9" Content="Convert images" Click="ConvertImages_Click" Margin="0,0,10,0" ToolTip="Convert image copies to WebP, JPEG, or PNG"/>
+      <Button Grid.Column="10" Content="⛶" ToolTip="Toggle fullscreen (F11)" Click="Fullscreen_Click" Padding="13,9"/>
     </Grid>
     <Border Grid.Row="1" Background="#0A0B0D" BorderBrush="#222629" BorderThickness="1" CornerRadius="16" ClipToBounds="True"
             DragEnter="Window_DragEnter" Drop="Window_Drop">

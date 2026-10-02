@@ -519,6 +519,11 @@ public partial class MainWindow : Window
         var window = new BulkCompressWindow { Owner = this };
         window.ShowDialog();
     }
+    private void ConvertImages_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new ImageConverterWindow { Owner = this };
+        window.ShowDialog();
+    }
     private void SoundToggle_Click(object sender, RoutedEventArgs e)
     {
         _soundEnabled = !_soundEnabled;

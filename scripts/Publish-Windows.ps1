@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.0.0",
+    [string]$Version = "1.0.4",
     [string]$ApiBaseUrl = "https://www.trykeeply.live/",
     [string]$CheckoutUrl = "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B"
 )
@@ -41,6 +41,8 @@ Compress-Archive -Path (Join-Path $publishDir "*") -DestinationPath $zipPath -Co
 $compiler = Get-Command "makensis.exe" -ErrorAction SilentlyContinue
 if (-not $compiler) {
     $nsisPaths = @(
+        "${env:ProgramFiles(x86)}\NSIS\Bin\makensis.exe",
+        "$env:ProgramFiles\NSIS\Bin\makensis.exe",
         "${env:ProgramFiles(x86)}\NSIS\makensis.exe",
         "$env:ProgramFiles\NSIS\makensis.exe"
     )
