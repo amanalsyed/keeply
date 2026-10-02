@@ -23,10 +23,14 @@ if (Test-Path $publishDir) { Remove-Item -LiteralPath $publishDir -Recurse -Forc
 
 dotnet publish $project -c Release -r win-x64 --self-contained true `
     -p:PublishSingleFile=true `
+    -p:DebugSymbols=false `
+    -p:DebugType=None `
     -p:IncludeNativeLibrariesForSelfExtract=true `
     -p:IncludeAllContentForSelfExtract=true `
     -o $publishDir
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
+
+Get-ChildItem -LiteralPath $publishDir -Filter "*.pdb" -File -Recurse | Remove-Item -Force
 
 $config = [ordered]@{
     apiBaseUrl = $ApiBaseUrl.TrimEnd('/') + "/"
