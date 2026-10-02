@@ -514,6 +514,11 @@ public partial class MainWindow : Window
         var window = new DuplicateFinderWindow(_licenseStore, () => License_Click(this, new RoutedEventArgs())) { Owner = this };
         window.ShowDialog();
     }
+    private void BulkCompress_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new BulkCompressWindow { Owner = this };
+        window.ShowDialog();
+    }
     private void SoundToggle_Click(object sender, RoutedEventArgs e)
     {
         _soundEnabled = !_soundEnabled;
