@@ -14,7 +14,7 @@ This is a Next.js App Router site designed for Vercel. Run `npm install`, copy `
 
 6. In the Creem test environment, test purchase delivery, activation limit, deactivation, invalid keys, and the exact API response fields before enabling live checkout. Keep the Creem private key only in Vercel server environment variables; never use a `NEXT_PUBLIC_` prefix for it.
 
-The Windows installer is served directly from the same website at `/downloads/Keeply-Setup.exe`. The Windows release script copies the built installer into `website/public/downloads`, and the site's download buttons use that same-origin path so the browser downloads it without sending visitors to a different website.
+The website's app-install buttons point to Keeply's public [Microsoft Store listing](https://apps.microsoft.com/store/detail/9PL19QH8CKJ0?cid=DevShareMCLPCS). The Windows installer is also served directly at `/downloads/Keeply-Setup.exe` as a website download option. The Windows release script copies the built installer into `website/public/downloads`.
 
 ## License API
 

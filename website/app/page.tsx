@@ -1,10 +1,10 @@
 import { SiteFrame } from "../components/SiteChrome";
 import { PurchaseButton } from "../components/PurchaseButton";
+import { microsoftStoreUrl } from "../lib/store";
 
 export default function HomePage() {
   const checkoutUrl = process.env.CREEM_CHECKOUT_URL || "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B";
-  const downloadUrl = "/downloads/Keeply-Setup.exe";
-  const downloadText = "Download for Windows";
+  const downloadText = "Get it from Microsoft Store";
 
   return (
     <SiteFrame home>
@@ -15,7 +15,7 @@ export default function HomePage() {
             <h1>Sort your photos,<br /><span>one at a time.</span></h1>
             <p>Open a folder and review each photo. Press K to keep it, T to send it to the Recycle Bin, or A to copy it to an album. Your photos stay on your PC.</p>
             <div className="hero-actions">
-              <a className="button" href={downloadUrl} download="Keeply-Setup.exe" data-ga-event="download_app" data-ga-location="hero">Try it free <span>→</span></a>
+              <a className="button" href={microsoftStoreUrl} target="_blank" rel="noopener noreferrer" data-ga-event="store_listing_click" data-ga-location="hero">Get it from Microsoft Store <span>→</span></a>
               <a className="text-link" href="#how" data-ga-event="cta_click" data-ga-location="hero">See how it works <span>↓</span></a>
             </div>
             <div className="trust"><span>✓ Windows desktop app</span><span>✓ Your photos stay local</span><span>✓ No account required</span></div>
@@ -62,7 +62,7 @@ export default function HomePage() {
         <section id="pricing" className="section wrap pricing" data-reveal>
           <div className="section-head"><div className="eyebrow">STRAIGHTFORWARD PRICING</div><h2>Start free. Unlock unlimited sorting.</h2><p>Try Keeply’s sorting workflow on up to three folders. Upgrade once when you’re ready to sort without folder or photo-count limits.</p></div>
           <div className="plans">
-            <article className="plan"><div className="plan-label">FREE</div><div className="price">$0</div><p>Everything you need to see if it fits your workflow.</p><ul><li>3 unique folders on this PC</li><li>Up to 100 supported photos per folder</li><li>Keep, Recycle Bin, and album actions</li><li>Undo and keyboard shortcuts</li><li>Local processing, no account</li></ul><a className="button outline" href={downloadUrl} download="Keeply-Setup.exe" data-ga-event="download_app" data-ga-location="pricing_free">{downloadText}</a></article>
+            <article className="plan"><div className="plan-label">FREE</div><div className="price">$0</div><p>Everything you need to see if it fits your workflow.</p><ul><li>3 unique folders on this PC</li><li>Up to 100 supported photos per folder</li><li>Keep, Recycle Bin, and album actions</li><li>Undo and keyboard shortcuts</li><li>Local processing, no account</li></ul><a className="button outline" href={microsoftStoreUrl} target="_blank" rel="noopener noreferrer" data-ga-event="store_listing_click" data-ga-location="pricing_free">{downloadText}</a></article>
             <article className="plan featured"><div className="ribbon">ONE-TIME PURCHASE</div><div className="plan-label">LIFETIME</div><div className="price">$6 <small>once</small></div><p>One purchase. Keep sorting without limits.</p><ul><li>Unlimited folders and photos</li><li>Lifetime license</li><li>Activate on up to 3 PCs</li><li>Activated PCs work offline</li><li>All Free features included</li></ul><PurchaseButton fallbackUrl={checkoutUrl} /><div className="checkout-note">Secure checkout powered by Creem</div></article>
           </div>
           <p className="guarantee-note"><strong>14-day money-back guarantee.</strong> If Keeply isn’t right for you, request a full refund within 14 calendar days of purchase. <a href="/refunds">See refund policy</a>.</p>

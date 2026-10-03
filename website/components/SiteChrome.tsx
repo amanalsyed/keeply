@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { microsoftStoreUrl } from "../lib/store";
 
 export function SiteHeader({ home = false }: { home?: boolean }) {
   return (
@@ -14,8 +15,8 @@ export function SiteHeader({ home = false }: { home?: boolean }) {
           <a href="#pricing" data-ga-event="cta_click" data-ga-location="header">Pricing</a>
           <a href="#privacy" data-ga-event="cta_click" data-ga-location="header">Privacy</a>
           </nav>
-          <a className="button small" href="/downloads/Keeply-Setup.exe" download="Keeply-Setup.exe" data-ga-event="download_app" data-ga-location="header">
-            Get the app <span>↗</span>
+          <a className="button small" href={microsoftStoreUrl} target="_blank" rel="noopener noreferrer" data-ga-event="store_listing_click" data-ga-location="header">
+            Microsoft Store <span>↗</span>
           </a>
         </>
       ) : (
