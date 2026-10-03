@@ -12,7 +12,7 @@ export default function HomePage() {
         <section className="hero wrap" data-reveal>
           <div className="hero-copy">
             <div className="eyebrow"><i /> LOCAL PHOTO TRIAGE FOR WINDOWS</div>
-            <h1>Sort your photos, one at a time.</h1>
+            <h1>Sort your photos,<br /><span>one at a time.</span></h1>
             <p>Open a folder and review each photo. Press K to keep it, T to send it to the Recycle Bin, or A to copy it to an album. Your photos stay on your PC.</p>
             <div className="hero-actions">
               <a className="button" href={downloadUrl} download="Keeply-Setup.exe" data-ga-event="download_app" data-ga-location="hero">Try it free <span>→</span></a>
@@ -20,14 +20,16 @@ export default function HomePage() {
             </div>
             <div className="trust"><span>✓ Windows desktop app</span><span>✓ Your photos stay local</span><span>✓ No account required</span></div>
           </div>
-          <div className="hero-video">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/FwgZaTbbZLI?rel=0"
-              title="Keeply photo sorting demo"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
+          <div className="hero-gallery">
+            <div className="hero-video">
+              <iframe
+                src="https://www.youtube-nocookie.com/embed/FwgZaTbbZLI?rel=0"
+                title="Keeply photo sorting demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
           </div>
         </section>
 
