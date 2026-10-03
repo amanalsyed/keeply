@@ -23,7 +23,7 @@ export default function HomePage() {
           <div className="hero-gallery">
             <div className="hero-video">
               <iframe
-                src="https://www.youtube-nocookie.com/embed/FwgZaTbbZLI?rel=0"
+                src="https://www.youtube-nocookie.com/embed/UEd83BihtYs?rel=0"
                 title="Keeply photo sorting demo"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerPolicy="strict-origin-when-cross-origin"
