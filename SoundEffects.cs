@@ -13,10 +13,12 @@ internal static class SoundEffects
     private static readonly SoundPlayer Keep = Create([(659.25, 75), (880, 100)]);
     private static readonly SoundPlayer Trash = Create([(392, 90), (293.66, 125)]);
     private static readonly SoundPlayer Album = Create([(523.25, 65), (659.25, 65), (783.99, 105)]);
+    private static readonly SoundPlayer Favorite = Create([(783.99, 65), (987.77, 85), (1174.66, 115)]);
 
     public static void PlayKeep() => Keep.Play();
     public static void PlayTrash() => Trash.Play();
     public static void PlayAlbum() => Album.Play();
+    public static void PlayFavorite() => Favorite.Play();
 
     private static SoundPlayer Create((double Frequency, int DurationMs)[] notes)
     {

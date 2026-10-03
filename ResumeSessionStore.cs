@@ -124,6 +124,7 @@ internal sealed class SavedTriageAction
     public string SourcePath { get; set; } = "";
     public string? TargetPath { get; set; }
     public int Index { get; set; }
+    public bool WasFavorite { get; set; }
 }
 
 internal sealed class JournalEntry

@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     };
     private readonly List<string> _photos = [];
     private readonly Stack<TriageAction> _actions = new();
+    private readonly Stack<UndoEntry> _undoHistory = new();
     private readonly Dictionary<string, TriageAction> _completedActions = new(StringComparer.OrdinalIgnoreCase);
     private int _index = -1;
     private string? _sourceFolder;
@@ -33,6 +34,10 @@ public partial class MainWindow : Window
     private readonly LicenseClient _licenseClient = new();
     private readonly ResumeSessionStore _resumeStore = new();
     private readonly QuickFolderStore _quickFolderStore = new();
+    private readonly FavoritesStore _favoritesStore = new();
+    private HashSet<string> _favorites = new(StringComparer.OrdinalIgnoreCase);
+    private string? _favoriteFolder;
+    private bool _favoritesStoreReady;
     private Dictionary<int, string> _quickFolders = new();
     private WindowStyle _savedStyle;
     private ResizeMode _savedResize;
@@ -44,6 +49,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _licenseStore = new LocalLicenseStore();
         UpdateAlbumFolderUi();
+        UpdateFavoriteUi();
         UpdateSessionUi();
         UpdateLicenseUi();
     }
@@ -58,6 +64,19 @@ public partial class MainWindow : Window
     {
         if (_startupResumeChecked) return;
         _startupResumeChecked = true;
+        try
+        {
+            _favorites = _favoritesStore.Load();
+            _favoriteFolder = _favoritesStore.LoadDestination();
+            _favoritesStoreReady = true;
+            UpdateFavoriteUi();
+            UpdateSessionUi();
+        }
+        catch (Exception ex)
+        {
+            FavoritesButton.IsEnabled = FavoriteToggleButton.IsEnabled = false;
+            ShowError("Could not load Favorites saved on this PC", ex);
+        }
         try
         {
             _quickFolders = _quickFolderStore.Load();
@@ -148,6 +167,7 @@ public partial class MainWindow : Window
 
             _photos.Clear();
             _actions.Clear();
+            _undoHistory.Clear();
             _completedActions.Clear();
             _albumFolder = null;
             _sourceFolder = folder;
@@ -165,8 +185,9 @@ public partial class MainWindow : Window
                 _queueFingerprint = ComputeQueueFingerprint(queue);
                 foreach (var action in saved.Actions)
                 {
-                    var restoredAction = new TriageAction((ActionKind)action.Kind, action.SourcePath, action.TargetPath, Math.Max(0, action.Index));
+                    var restoredAction = new TriageAction((ActionKind)action.Kind, action.SourcePath, action.TargetPath, Math.Max(0, action.Index), action.WasFavorite);
                     _actions.Push(restoredAction);
+                    _undoHistory.Push(UndoEntry.ForTriage(restoredAction));
                     _completedActions[restoredAction.SourcePath] = restoredAction;
                 }
                 _albumFolder = saved.AlbumFolder;
@@ -230,6 +251,7 @@ public partial class MainWindow : Window
         {
             var hasPhoto = _index >= 0 && _index < _photos.Count;
             UpdateSessionUi();
+            UpdateFavoriteUi();
             var noFolder = _sourceFolder is null;
             var emptyFolder = !noFolder && _photos.Count == 0 && _actions.Count == 0;
             EmptyPanel.Visibility = noFolder || emptyFolder ? Visibility.Visible : Visibility.Collapsed;
@@ -276,6 +298,7 @@ public partial class MainWindow : Window
                 {
                     ActionKind.Keep => "Already kept. U reverses the most recent action.",
                     ActionKind.Album => "Already added to the album. U reverses the most recent action.",
+                    ActionKind.Favorite => "Already copied to Favorites. U reverses the most recent action.",
                     _ => "Already processed. U reverses the most recent action."
                 });
         }
@@ -302,7 +325,13 @@ public partial class MainWindow : Window
     private async Task ProcessAsync(ActionKind kind, string? quickFolderDestination = null, int? quickFolderShortcut = null)
     {
         if (_loading || _index < 0 || _index >= _photos.Count) return;
+        if (kind == ActionKind.Favorite && !_favoritesStoreReady)
+        {
+            SetStatus("Favorites couldn't be loaded on this PC, so Keeply can't save this favorite.");
+            return;
+        }
         var photo = _photos[_index];
+        var wasFavorite = _favorites.Contains(photo);
         if (_completedActions.ContainsKey(photo))
         {
             SetStatus("This photo was already processed. Use U to undo the most recent action first.");
@@ -321,10 +350,15 @@ public partial class MainWindow : Window
             {
                 FileSystem.DeleteFile(photo, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
             }
-            else if (kind == ActionKind.Album)
+            else if (kind is ActionKind.Album or ActionKind.Favorite)
             {
                 string destination;
-                if (quickFolderDestination is not null)
+                if (kind == ActionKind.Favorite)
+                {
+                    if (!EnsureFavoriteFolder()) return;
+                    destination = _favoriteFolder!;
+                }
+                else if (quickFolderDestination is not null)
                 {
                     if (!Directory.Exists(quickFolderDestination))
                     {
@@ -341,11 +375,17 @@ public partial class MainWindow : Window
                 var albumTarget = UniquePath(destination, Path.GetFileName(photo));
                 target = albumTarget;
                 await Task.Run(() => File.Copy(photo, albumTarget));
+                if (kind == ActionKind.Favorite && !SetFavoriteState(photo, true, recordUndo: false, status: "", showFeedback: false))
+                {
+                    File.Delete(albumTarget);
+                    return;
+                }
             }
-            var action = new TriageAction(kind, photo, target, _index);
+            var action = new TriageAction(kind, photo, target, _index, wasFavorite);
             try { _resumeStore.RecordAction(_sourceFolder!, ToSavedAction(action)); }
             catch (Exception ex) { ShowError("Photo processed, but its resume history could not be saved", ex); }
             _actions.Push(action);
+            _undoHistory.Push(UndoEntry.ForTriage(action));
             _completedActions[photo] = action;
             _index = FindNextPendingIndex(_index + 1);
             SetStatus("");
@@ -355,6 +395,8 @@ public partial class MainWindow : Window
             await ShowCurrentAsync();
             if (quickFolderShortcut.HasValue && quickFolderDestination is not null)
                 SetStatus($"Copied to {DisplayFolderName(quickFolderDestination)} using shortcut {quickFolderShortcut.Value}.");
+            else if (kind == ActionKind.Favorite)
+                SetStatus($"Favorited and copied to {DisplayFolderName(_favoriteFolder!)}.");
         }
         catch (Exception ex) { ShowError(kind == ActionKind.Trash ? "Could not move this photo to the Recycle Bin" : "Could not process this photo", ex); }
         finally { _loading = false; }
@@ -371,10 +413,16 @@ public partial class MainWindow : Window
 
     private bool EnsureAlbumFolder()
     {
-        if (_albumFolder is not null && Directory.Exists(_albumFolder)) return true;
+        if (_albumFolder is not null && Directory.Exists(_albumFolder) && !IsFavoriteFolder(_albumFolder)) return true;
         using var dialog = new System.Windows.Forms.FolderBrowserDialog { Description = "Choose or create an album folder", UseDescriptionForTitle = true, ShowNewFolderButton = true, SelectedPath = _albumFolder ?? "" };
         if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-        _albumFolder = dialog.SelectedPath;
+        var selected = Path.GetFullPath(dialog.SelectedPath);
+        if (IsFavoriteFolder(selected))
+        {
+            MessageBox.Show(this, "Choose a different folder from the Favorites destination used by F.", "Separate Album folder", MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+        _albumFolder = selected;
         if (!Directory.Exists(_albumFolder)) { SetStatus("The album folder no longer exists. Choose another folder."); return false; }
         UpdateAlbumFolderUi();
         return true;
@@ -383,22 +431,38 @@ public partial class MainWindow : Window
     private async void Undo_Click(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        if (_actions.Count == 0) { SetStatus("Nothing to undo."); return; }
+        if (_undoHistory.Count == 0) { SetStatus("Nothing to undo."); return; }
+        var undoEntry = _undoHistory.Peek();
+        if (undoEntry.Kind == UndoKind.Favorite)
+        {
+            if (SetFavoriteState(undoEntry.Path, undoEntry.WasFavorite, recordUndo: false,
+                    undoEntry.WasFavorite ? "Undo complete: photo returned to Favorites." : "Undo complete: photo removed from Favorites."))
+                _undoHistory.Pop();
+            UpdateSessionUi();
+            return;
+        }
+        if (_actions.Count == 0) { SetStatus("There is no sorting action available to undo."); return; }
         _loading = true;
         var action = _actions.Peek();
         try
         {
-            if (action.Kind == ActionKind.Album && action.TargetPath is not null && File.Exists(action.TargetPath)) File.Delete(action.TargetPath);
+            if (action.Kind == ActionKind.Favorite &&
+                !SetFavoriteState(action.SourcePath, action.WasFavorite, recordUndo: false,
+                    status: "Undo complete: favorite copy removed and photo returned to the queue.", showFeedback: false))
+                return;
+            if ((action.Kind is ActionKind.Album or ActionKind.Favorite) && action.TargetPath is not null && File.Exists(action.TargetPath)) File.Delete(action.TargetPath);
             if (action.Kind == ActionKind.Trash) RecycleBinRestorer.Restore(action.SourcePath);
             try { _resumeStore.RecordUndo(_sourceFolder!, action.SourcePath); }
             catch (Exception ex) { ShowError("Photo restored, but its resume history could not be updated", ex); }
             _actions.Pop();
+            _undoHistory.Pop();
             _completedActions.Remove(action.SourcePath);
             _index = Math.Clamp(action.Index, 0, Math.Max(0, _photos.Count - 1));
             SetStatus(action.Kind switch
             {
                 ActionKind.Keep => "Undo complete: photo returned to the queue.",
                 ActionKind.Trash => "Undo complete: photo restored from the Recycle Bin.",
+                ActionKind.Favorite => "Undo complete: favorite copy removed and photo returned to the queue.",
                 _ => "Undo complete: album copy removed."
             });
             PersistSession();
@@ -482,6 +546,7 @@ public partial class MainWindow : Window
             case Key.K: await ProcessAsync(ActionKind.Keep); break;
             case Key.T: await ProcessAsync(ActionKind.Trash); break;
             case Key.A: await ProcessAsync(ActionKind.Album); break;
+            case Key.F: await ProcessAsync(ActionKind.Favorite); break;
             case Key.U: Undo_Click(this, new RoutedEventArgs()); break;
             case Key.Left: await NavigateAsync(-1); break;
             case Key.Right: await NavigateAsync(1); break;
@@ -524,6 +589,109 @@ public partial class MainWindow : Window
         var window = new ImageConverterWindow { Owner = this };
         window.ShowDialog();
     }
+    private void Favorites_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_favoritesStoreReady) return;
+        var window = new FavoritesWindow(_favorites, path => SetFavoriteState(path, false, recordUndo: true),
+            _favoriteFolder, SaveFavoriteDestination) { Owner = this };
+        window.ShowDialog();
+    }
+    private async void Favorite_Click(object sender, RoutedEventArgs e) => await ProcessAsync(ActionKind.Favorite);
+    private bool SetFavoriteState(string path, bool isFavorite, bool recordUndo, string? status = null, bool showFeedback = true)
+    {
+        if (!_favoritesStoreReady) return false;
+        var normalizedPath = Path.GetFullPath(path);
+        var wasFavorite = _favorites.Contains(normalizedPath);
+        if (wasFavorite == isFavorite) return true;
+
+        var updated = new HashSet<string>(_favorites, StringComparer.OrdinalIgnoreCase);
+        if (isFavorite) updated.Add(normalizedPath);
+        else updated.Remove(normalizedPath);
+        try { _favoritesStore.Save(updated); }
+        catch (Exception ex) { ShowError("Could not save Favorites on this PC", ex); return false; }
+
+        _favorites = updated;
+        if (recordUndo) _undoHistory.Push(UndoEntry.ForFavorite(normalizedPath, wasFavorite));
+        UpdateFavoriteUi();
+        UpdateSessionUi();
+        SetStatus(status ?? (isFavorite ? "Added to Favorites on this PC. Press F again to remove it." : "Removed from Favorites."));
+        if (showFeedback && _index >= 0 && _index < _photos.Count &&
+            StringComparer.OrdinalIgnoreCase.Equals(_photos[_index], normalizedPath))
+        {
+            if (_soundEnabled) SoundEffects.PlayFavorite();
+            _ = ShowFavoriteFeedbackAsync(isFavorite);
+        }
+        return true;
+    }
+
+    private bool EnsureFavoriteFolder()
+    {
+        if (_favoriteFolder is not null && Directory.Exists(_favoriteFolder) && !IsAlbumFolder(_favoriteFolder)) return true;
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = "Choose a Favorites folder, separate from your Album folder",
+            UseDescriptionForTitle = true,
+            ShowNewFolderButton = true,
+            SelectedPath = _favoriteFolder ?? ""
+        };
+        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
+        var selected = Path.GetFullPath(dialog.SelectedPath);
+        if (IsAlbumFolder(selected))
+        {
+            MessageBox.Show(this, "Choose a different folder from the Album destination used by A.", "Separate Favorites folder", MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+        if (!Directory.Exists(selected))
+        {
+            SetStatus("The Favorites folder is unavailable. Choose another folder.");
+            return false;
+        }
+        try { _favoritesStore.SaveDestination(selected); }
+        catch (Exception ex) { ShowError("Could not save the Favorites folder on this PC", ex); return false; }
+        _favoriteFolder = selected;
+        return true;
+    }
+
+    private bool SaveFavoriteDestination(string path)
+    {
+        var selected = Path.GetFullPath(path);
+        if (IsAlbumFolder(selected))
+        {
+            MessageBox.Show(this, "Choose a different folder from the Album destination used by A.", "Separate Favorites folder", MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+        try { _favoritesStore.SaveDestination(selected); }
+        catch (Exception ex) { ShowError("Could not save the Favorites folder on this PC", ex); return false; }
+        _favoriteFolder = selected;
+        return true;
+    }
+
+    private bool IsAlbumFolder(string path) => !string.IsNullOrWhiteSpace(_albumFolder) &&
+        StringComparer.OrdinalIgnoreCase.Equals(Path.GetFullPath(path), Path.GetFullPath(_albumFolder));
+    private bool IsFavoriteFolder(string path) => !string.IsNullOrWhiteSpace(_favoriteFolder) &&
+        StringComparer.OrdinalIgnoreCase.Equals(Path.GetFullPath(path), Path.GetFullPath(_favoriteFolder));
+    private async Task ShowFavoriteFeedbackAsync(bool isFavorite)
+    {
+        FavoriteFeedback.BeginAnimation(OpacityProperty, null);
+        FavoriteFeedbackIcon.Text = isFavorite ? "★" : "☆";
+        FavoriteFeedbackText.Text = isFavorite ? "Added to Favorites" : "Removed from Favorites";
+        var accent = isFavorite
+            ? System.Windows.Media.Color.FromRgb(139, 224, 188)
+            : System.Windows.Media.Color.FromRgb(205, 211, 215);
+        FavoriteFeedbackIcon.Foreground = new System.Windows.Media.SolidColorBrush(accent);
+        FavoriteFeedback.BorderBrush = new System.Windows.Media.SolidColorBrush(accent);
+        FavoriteFeedback.Background = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.Color.FromArgb(230, 27, 51, 41));
+        FavoriteFeedback.Opacity = 0;
+        FavoriteFeedback.Visibility = Visibility.Visible;
+        FavoriteFeedback.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(130)));
+        await Task.Delay(760);
+        if (!IsLoaded) return;
+        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(230));
+        fadeOut.Completed += (_, _) => FavoriteFeedback.Visibility = Visibility.Collapsed;
+        FavoriteFeedback.BeginAnimation(OpacityProperty, fadeOut);
+    }
     private void SoundToggle_Click(object sender, RoutedEventArgs e)
     {
         _soundEnabled = !_soundEnabled;
@@ -546,7 +714,13 @@ public partial class MainWindow : Window
         using var dialog = new System.Windows.Forms.FolderBrowserDialog { Description = "Choose or create an album folder", UseDescriptionForTitle = true, ShowNewFolderButton = true, SelectedPath = _albumFolder ?? "" };
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
         {
-            _albumFolder = dialog.SelectedPath;
+            var selected = Path.GetFullPath(dialog.SelectedPath);
+            if (IsFavoriteFolder(selected))
+            {
+                MessageBox.Show(this, "Choose a different folder from the Favorites destination used by F.", "Separate Album folder", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            _albumFolder = selected;
             UpdateAlbumFolderUi();
             SetStatus("Album destination changed.");
             PersistSession();
@@ -685,7 +859,8 @@ public partial class MainWindow : Window
         Kind = (int)action.Kind,
         SourcePath = action.SourcePath,
         TargetPath = action.TargetPath,
-        Index = action.Index
+        Index = action.Index,
+        WasFavorite = action.WasFavorite
     };
 
     private static string ComputeQueueFingerprint(IEnumerable<string> paths)
@@ -712,12 +887,32 @@ public partial class MainWindow : Window
         AlbumFolderButton.ToolTip = _albumFolder;
     }
 
+    private void UpdateFavoriteUi()
+    {
+        FavoritesButton.Content = $"★ Favorites · {_favorites.Count:N0}";
+        FavoritesButton.IsEnabled = _favoritesStoreReady;
+
+        var hasPhoto = _index >= 0 && _index < _photos.Count;
+        FavoriteToggleButton.Visibility = hasPhoto ? Visibility.Visible : Visibility.Collapsed;
+        if (!hasPhoto) return;
+
+        var path = _photos[_index];
+        var isFavorite = _favorites.Contains(path);
+        FavoriteToggleButton.Content = isFavorite ? "★ Favorite & next · F" : "☆ Favorite & next · F";
+        FavoriteToggleButton.IsEnabled = _favoritesStoreReady && File.Exists(path) && !_completedActions.ContainsKey(path);
+        FavoriteToggleButton.ToolTip = "Copy this photo to the separate Favorites folder, save it to the Favorites list, then continue. The original stays in place.";
+        FavoriteToggleButton.Background = isFavorite
+            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(235, 35, 72, 54))
+            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(217, 28, 34, 37));
+    }
+
     private string FormatActionCounts()
     {
         var kept = _actions.Count(action => action.Kind == ActionKind.Keep);
         var trashed = _actions.Count(action => action.Kind == ActionKind.Trash);
         var album = _actions.Count(action => action.Kind == ActionKind.Album);
-        return $"Keep {kept}   ·   Trash {trashed}   ·   Album {album}";
+        var favorites = _actions.Count(action => action.Kind == ActionKind.Favorite);
+        return $"Keep {kept}   ·   Trash {trashed}   ·   Album {album}   ·   Favorites {favorites}";
     }
 
     private void UpdateSessionUi()
@@ -732,7 +927,8 @@ public partial class MainWindow : Window
         NextButton.IsEnabled = hasPhoto && _index < _photos.Count - 1;
         var canProcess = hasPhoto && File.Exists(_photos[_index]) && !_completedActions.ContainsKey(_photos[_index]);
         KeepButton.IsEnabled = AlbumButton.IsEnabled = TrashButton.IsEnabled = canProcess;
-        UndoButton.IsEnabled = _actions.Count > 0;
+        FavoriteToggleButton.IsEnabled = canProcess && _favoritesStoreReady;
+        UndoButton.IsEnabled = _undoHistory.Count > 0;
         ActionCountsText.Text = _sourceFolder is null ? "" : FormatActionCounts();
         FinishStatsText.Text = FormatActionCounts();
     }
@@ -745,6 +941,7 @@ public partial class MainWindow : Window
             case ActionKind.Keep: SoundEffects.PlayKeep(); break;
             case ActionKind.Trash: SoundEffects.PlayTrash(); break;
             case ActionKind.Album: SoundEffects.PlayAlbum(); break;
+            case ActionKind.Favorite: SoundEffects.PlayFavorite(); break;
         }
     }
 
@@ -756,12 +953,14 @@ public partial class MainWindow : Window
             ActionKind.Keep => "KEPT",
             ActionKind.Trash => "TRASHED",
             ActionKind.Album => "ADDED TO ALBUM",
+            ActionKind.Favorite => "★ FAVORITED · COPIED",
             _ => ""
         };
         ActionBadge.BorderBrush = kind switch
         {
             ActionKind.Keep => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(126, 218, 166)),
             ActionKind.Trash => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(239, 142, 142)),
+            ActionKind.Favorite => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(139, 224, 188)),
             _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(137, 183, 230))
         };
         ActionBadge.Visibility = Visibility.Visible;
@@ -808,8 +1007,14 @@ public partial class MainWindow : Window
         ActionBadge.Visibility = Visibility.Collapsed;
     }
 
-    private enum ActionKind { Keep, Trash, Album }
+    private enum ActionKind { Keep, Trash, Album, Favorite }
+    private enum UndoKind { Triage, Favorite }
     private enum ResumeChoice { Resume, StartOver, Cancel }
     private enum MotionMode { Smooth, Standard, Reduced }
-    private sealed record TriageAction(ActionKind Kind, string SourcePath, string? TargetPath, int Index);
+    private sealed record TriageAction(ActionKind Kind, string SourcePath, string? TargetPath, int Index, bool WasFavorite = false);
+    private sealed record UndoEntry(UndoKind Kind, TriageAction? TriageAction, string Path, bool WasFavorite)
+    {
+        public static UndoEntry ForTriage(TriageAction action) => new(UndoKind.Triage, action, action.SourcePath, false);
+        public static UndoEntry ForFavorite(string path, bool wasFavorite) => new(UndoKind.Favorite, null, path, wasFavorite);
+    }
 }

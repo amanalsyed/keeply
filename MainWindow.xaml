@@ -28,6 +28,19 @@
             DragEnter="Window_DragEnter" Drop="Window_Drop">
       <Grid>
         <Image x:Name="PhotoImage" Stretch="Uniform" Margin="18" SnapsToDevicePixels="True"/>
+        <Button x:Name="FavoritesButton" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18" Padding="12,8"
+                Content="★ Favorites · 0" Click="Favorites_Click" ToolTip="Open the Favorites list and change its separate destination folder"/>
+        <Button x:Name="FavoriteToggleButton" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="18" Padding="14,9"
+                Content="☆ Favorite · F" Click="Favorite_Click" Background="#D91C2225" BorderBrush="#52615A"
+                Visibility="Collapsed" ToolTip="Copy this photo to the separate Favorites folder, add it to the Favorites list, then continue. The original stays in place."/>
+        <Border x:Name="FavoriteFeedback" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20,12"
+                CornerRadius="18" Background="#E61B3329" BorderBrush="#8BE0BC" BorderThickness="1"
+                Opacity="0" Visibility="Collapsed" IsHitTestVisible="False">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock x:Name="FavoriteFeedbackIcon" Text="★" FontSize="28" Foreground="#8BE0BC" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBlock x:Name="FavoriteFeedbackText" Text="Added to Favorites" FontSize="17" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Border>
         <StackPanel x:Name="EmptyPanel" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440">
           <TextBlock x:Name="EmptyHeading" Text="A lighter photo folder starts here." FontSize="27" FontWeight="SemiBold" TextAlignment="Center"/>
           <TextBlock x:Name="EmptyDescription" Text="Choose a folder or drop it anywhere in this window. Your photos stay on this PC." Foreground="{StaticResource Muted}" FontSize="15" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,22"/>
