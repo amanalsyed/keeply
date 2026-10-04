@@ -70,7 +70,7 @@ internal static class LicenseTokenVerifier
     private static byte[] DecodeBase64Url(string value)
     {
         var base64 = value.Replace('-', '+').Replace('_', '/');
-        base64 += base64.Length % 4 switch { 0 => "", 2 => "==", 3 => "=", _ => throw new FormatException("Invalid base64url value.") };
+        base64 += (base64.Length % 4) switch { 0 => "", 2 => "==", 3 => "=", _ => throw new FormatException("Invalid base64url value.") };
         return Convert.FromBase64String(base64);
     }
 }
