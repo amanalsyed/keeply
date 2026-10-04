@@ -80,11 +80,17 @@ function readLicenseSigningKey() {
   const configuredValue = process.env.KEEPLY_LICENSE_SIGNING_PRIVATE_KEY;
   if (!configuredValue?.trim()) throw Object.assign(new Error("License activation is not configured yet."), { status: 503 });
 
-  let pem = configuredValue.trim();
-  if ((pem.startsWith('"') && pem.endsWith('"')) || (pem.startsWith("'") && pem.endsWith("'"))) {
-    pem = pem.slice(1, -1);
+  let value = configuredValue.trim();
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1);
   }
-  pem = pem.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+
+  let pem: string;
+  if (value.startsWith("base64:")) {
+    pem = Buffer.from(value.slice("base64:".length).trim(), "base64").toString("utf8");
+  } else {
+    pem = value.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+  }
 
   try {
     return createPrivateKey({ key: pem, format: "pem" });
