@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PhotoKeepKill;
 
@@ -18,7 +19,16 @@ internal sealed class LocalLicenseStore
 
     public LocalLicenseStore() { Directory.CreateDirectory(Root); _state = Read(); }
     public IReadOnlyCollection<string> FolderHashes { get { lock (_sync) return _state.FolderHashes.ToArray(); } }
-    public bool IsLicensed { get { lock (_sync) return _state.License is not null; } }
+    public bool HasStoredLicense { get { lock (_sync) return _state.License is not null; } }
+    public bool IsLicensed
+    {
+        get
+        {
+            lock (_sync)
+                return _state.License is { SignedToken: { } token } license &&
+                    LicenseTokenVerifier.IsValid(token, license.InstanceId);
+        }
+    }
     public string InstallName { get { lock (_sync) return _state.InstallName; } }
     public LicenseRecord? License { get { lock (_sync) return _state.License; } }
 
@@ -32,9 +42,28 @@ internal sealed class LocalLicenseStore
     {
         lock (_sync) { if (_state.FolderHashes.Contains(hash, StringComparer.Ordinal)) return; _state.FolderHashes.Add(hash); Save(); }
     }
-    public void Activate(string key, string instanceId)
+    public void Activate(string key, string instanceId, string signedToken)
     {
-        lock (_sync) { _state.License = new LicenseRecord(Convert.ToBase64String(Protect(Encoding.UTF8.GetBytes(key))), instanceId); Save(); }
+        if (!LicenseTokenVerifier.IsValid(signedToken, instanceId))
+            throw new InvalidDataException("The licensing service returned an invalid signed license. This PC was not activated.");
+        lock (_sync)
+        {
+            _state.License = new LicenseRecord(
+                Convert.ToBase64String(Protect(Encoding.UTF8.GetBytes(key))),
+                instanceId,
+                Convert.ToBase64String(Protect(Encoding.UTF8.GetBytes(signedToken))));
+            Save();
+        }
+    }
+    public void RefreshSignedToken(string signedToken)
+    {
+        lock (_sync)
+        {
+            if (_state.License is not { } license || !LicenseTokenVerifier.IsValid(signedToken, license.InstanceId))
+                throw new InvalidDataException("The licensing service returned an invalid signed license token.");
+            _state.License = license with { ProtectedToken = Convert.ToBase64String(Protect(Encoding.UTF8.GetBytes(signedToken))) };
+            Save();
+        }
     }
     public string? ReadLicenseKey()
     {
@@ -83,5 +112,17 @@ internal sealed class LocalLicenseStore
         public string InstallName { get; set; } = "Keeply-" + Guid.NewGuid().ToString("N");
         public LicenseRecord? License { get; set; }
     }
-    public sealed record LicenseRecord(string ProtectedKey, string InstanceId);
+    public sealed record LicenseRecord(string ProtectedKey, string InstanceId, string? ProtectedToken = null)
+    {
+        [JsonIgnore]
+        public string? SignedToken
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(ProtectedToken)) return null;
+                try { return Encoding.UTF8.GetString(Unprotect(Convert.FromBase64String(ProtectedToken))); }
+                catch (Exception ex) when (ex is FormatException or System.ComponentModel.Win32Exception or CryptographicException) { return null; }
+            }
+        }
+    }
 }

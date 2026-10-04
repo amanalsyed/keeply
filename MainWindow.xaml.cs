@@ -43,6 +43,8 @@ public partial class MainWindow : Window
     private ResizeMode _savedResize;
     private WindowState _savedState;
     private bool _startupResumeChecked;
+    private bool _licenseValidationPending;
+    private System.Windows.Threading.DispatcherTimer? _licenseValidationTimer;
 
     public MainWindow()
     {
@@ -64,6 +66,13 @@ public partial class MainWindow : Window
     {
         if (_startupResumeChecked) return;
         _startupResumeChecked = true;
+        var migratingUnsignedLicense = _licenseStore.HasStoredLicense && !_licenseStore.IsLicensed;
+        if (migratingUnsignedLicense)
+        {
+            _licenseValidationPending = true;
+            try { await RefreshLicenseFromServerAsync(); }
+            finally { _licenseValidationPending = false; }
+        }
         try
         {
             _favorites = _favoritesStore.Load();
@@ -89,6 +98,38 @@ public partial class MainWindow : Window
             if (recent is not null) await LoadFolderAsync(recent.FolderPath);
         }
         catch (Exception ex) { ShowError("Could not check for saved sorting progress", ex); }
+
+        if (!migratingUnsignedLicense) await RefreshLicenseFromServerAsync();
+        _licenseValidationTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromHours(24) };
+        _licenseValidationTimer.Tick += async (_, _) => await RefreshLicenseFromServerAsync();
+        _licenseValidationTimer.Start();
+    }
+
+    private async Task RefreshLicenseFromServerAsync()
+    {
+        if (!_licenseStore.HasStoredLicense) return;
+        try
+        {
+            var license = _licenseStore.License;
+            var key = _licenseStore.ReadLicenseKey();
+            if (license is null || string.IsNullOrWhiteSpace(key)) return;
+            var result = await _licenseClient.ValidateAsync(key, license.InstanceId);
+            if (!result.IsValid)
+            {
+                _licenseStore.ClearLicense();
+                UpdateLicenseUi();
+                SetStatus("This license is no longer active. Enter a valid lifetime license to unlock paid features.");
+                MessageBox.Show(this, "Keeply could not confirm this license as active. The PC has been returned to Free use. If you believe this is a mistake, check your connection and activate the key again.", "License status changed", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            if (result.SignedToken is not null) _licenseStore.RefreshSignedToken(result.SignedToken);
+        }
+        catch
+        {
+            // The cached signed lifetime token remains usable when this PC is offline.
+            if (!_licenseStore.IsLicensed)
+                SetStatus("Connect to the internet to verify this PC's existing license before Keeply can unlock paid features.");
+        }
     }
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -113,6 +154,11 @@ public partial class MainWindow : Window
 
     private async Task LoadFolderAsync(string folder)
     {
+        if (_licenseValidationPending)
+        {
+            SetStatus("Checking this PC's existing license. Please try again in a moment.");
+            return;
+        }
         try
         {
             if (_sourceFolder is not null && !PersistSession()) return;
@@ -797,8 +843,8 @@ public partial class MainWindow : Window
             try
             {
                 var key = keyBox.Text.Trim();
-                var instanceId = await _licenseClient.ActivateAsync(key, _licenseStore.InstallName);
-                _licenseStore.Activate(key, instanceId); UpdateLicenseUi(); SetStatus("Lifetime license activated. This PC can now work offline."); dialog.Close();
+                var activation = await _licenseClient.ActivateAsync(key, _licenseStore.InstallName);
+                _licenseStore.Activate(key, activation.InstanceId, activation.SignedToken); UpdateLicenseUi(); SetStatus("Lifetime license activated. This PC can now work offline."); dialog.Close();
             }
             catch (Exception ex) { MessageBox.Show(dialog, ex.Message, "Activation failed", MessageBoxButton.OK, MessageBoxImage.Warning); }
             finally { activate.IsEnabled = true; }

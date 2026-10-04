@@ -28,10 +28,23 @@ internal sealed class LicenseClient
         CheckoutUrl = string.IsNullOrWhiteSpace(configuredCheckout) ? DefaultCheckoutUrl : configuredCheckout;
         _baseUrl = _baseUrl.TrimEnd('/');
     }
-    public async Task<string> ActivateAsync(string key, string installName)
+    public async Task<ActivationResult> ActivateAsync(string key, string installName)
     {
         var result = await SendAsync("activate", new { key, instanceName = installName });
-        return result.GetProperty("instanceId").GetString() ?? throw new InvalidDataException("The licensing service did not return an activation ID.");
+        var instanceId = result.GetProperty("instanceId").GetString() ?? throw new InvalidDataException("The licensing service did not return an activation ID.");
+        var signedToken = result.GetProperty("licenseToken").GetString() ?? throw new InvalidDataException("The licensing service did not return a signed license token.");
+        if (!LicenseTokenVerifier.IsValid(signedToken, instanceId))
+            throw new InvalidDataException("The licensing service returned a license token that Keeply could not verify.");
+        return new ActivationResult(instanceId, signedToken);
+    }
+    public async Task<ValidationResult> ValidateAsync(string key, string instanceId)
+    {
+        var result = await SendAsync("validate", new { key, instanceId });
+        var isValid = result.TryGetProperty("valid", out var valid) && valid.ValueKind == JsonValueKind.True;
+        var signedToken = result.TryGetProperty("licenseToken", out var token) ? token.GetString() : null;
+        if (isValid && (signedToken is null || !LicenseTokenVerifier.IsValid(signedToken, instanceId)))
+            throw new InvalidDataException("The licensing service returned a license token that Keeply could not verify.");
+        return new ValidationResult(isValid, signedToken);
     }
     public async Task DeactivateAsync(string key, string instanceId) => _ = await SendAsync("deactivate", new { key, instanceId });
     private async Task<JsonElement> SendAsync(string action, object payload)
@@ -45,4 +58,7 @@ internal sealed class LicenseClient
         if (!response.IsSuccessStatusCode) throw new InvalidOperationException(json.RootElement.TryGetProperty("error", out var error) ? error.GetString() : "License service request failed.");
         return json.RootElement.Clone();
     }
+
+    public sealed record ActivationResult(string InstanceId, string SignedToken);
+    public sealed record ValidationResult(bool IsValid, string? SignedToken);
 }
