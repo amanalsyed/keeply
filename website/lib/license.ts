@@ -77,8 +77,15 @@ async function callCreem(path: string, body: Record<string, string>): Promise<Re
 }
 
 function readLicenseSigningKey() {
-  const pem = process.env.KEEPLY_LICENSE_SIGNING_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  if (!pem) throw Object.assign(new Error("License activation is not configured yet."), { status: 503 });
+  const configuredValue = process.env.KEEPLY_LICENSE_SIGNING_PRIVATE_KEY;
+  if (!configuredValue?.trim()) throw Object.assign(new Error("License activation is not configured yet."), { status: 503 });
+
+  let pem = configuredValue.trim();
+  if ((pem.startsWith('"') && pem.endsWith('"')) || (pem.startsWith("'") && pem.endsWith("'"))) {
+    pem = pem.slice(1, -1);
+  }
+  pem = pem.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+
   try {
     return createPrivateKey({ key: pem, format: "pem" });
   } catch {
