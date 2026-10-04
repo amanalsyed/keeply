@@ -14,16 +14,19 @@ internal static class LicenseTokenVerifier
     // Public verification key only. The matching private key is kept in the website's
     // server environment and must never be included in the desktop application.
     private const string PublicKeyPem = """
-        -----BEGIN PUBLIC KEY-----
-        MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAy1MTQ9J6E1kkiYSViZES
-        d5eohAPWnTicxHJVoge8iyo5jd0bfiMgkJvxmEOn/+NqBQtC05Bcg8nHWWz41hva
-        0MwCedn6OcTb76I6tTL0NhPJMslcCxT3ynD8RTbkQ3RE+NQSj2d/nggGGUiGS6/F
-        lYj3PiHl2pM8IiNDEeVGpD72zphXeyCnfZI6jrShZSYu5/AiDnROB0Kpf1ZQXNM1
-        CSvaiXNmWd6JoXlYT4dmV7H4mKsfYHT2u+S+KVjodYpg7LLiPu0B80Pw6zkzXS8z
-        6NCqoIfizTKbz3sMdfUWRuXF9H960Y1hweqiZ2B7khB1/InZXmpS9JceazUcTjLn
-        XF5ii9o78HwhI4F1q2Ja0BAYwQFwtgFG5C6xSlduL0iD/DcKgbY1GU/3/+UO3L/j
-        DukC9QNSeL5TekcAtd0YR2XHx1SLUAnaOsKdN7m6E0AlPQ6A7Tb1QOKTFPeHaDdr
-        D9zxly0Mr3oQjeKuAUY4SXUZ067ecSmnS66G6R1CFcb5AgMBAAE=
+                -----BEGIN PUBLIC KEY-----
+        MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAuDUsrF6qG1pZkUvnCp2h
+        K49Vgcd8kr3msj0cof8QPtZiRIm3k9vYf4GAg0MBVOQhshCNi2W0IDqgTVs+BY6m
+        bWOip8h6KVlW32WwyE7EwYulLP9FHcp672yVVdquRtR85v6K6Rw5Gr2CcSdAc3q4
+        J2Pgwg0qmnFfCpiN23HkaeiLsl/OSb3OxX4UBSQG4W24sqzRR++D1EE3ssYYPOVh
+        LvOsOw4cTEXXEhoS7ClQHXTBIbaegvDkz4OxGMwkd+kQNHzQ2LA7B6W1eXfd4jsW
+        MA522XKHVDVQmJGZlm+EsCJhpYbVzWczdBlwi1+O8VitRZA6rwvAQWEDpSns6xSn
+        M4x2MXmEORwy4xP4gAOKPTPbM9qRHPTAHQqZWm18m5rP8ALlHDaM8jGlVzUzBZcA
+        wHG7ifuRwxlqxEmF/T2E724jEHFMkfU6H/u8gLAjLya1O8tlrS53Rd9Uk+BYJB1G
+        iyltMUR1vEaMJ9ur8d4H0AW18yPTN/vlL2HEIplX3Anl/n3ifbxFqn3cs2Y8cueS
+        CJVOM0eVLpcGQrBINJfMkGMrkw7a0O0AkQFUBpJsg5ITJmIxCZkf/pDTyXw0cMbC
+        CJyRhJxGEoKZrqVqWV0AudMm8OrNehjERCgsUu4TL3KUGKuyRT2LYURY9cLXlOLE
+        06R1AlKPiEPF7VpjFT2ZDJUCAwEAAQ==
         -----END PUBLIC KEY-----
         """;
 
