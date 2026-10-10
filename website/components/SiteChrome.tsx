@@ -11,7 +11,7 @@ export function SiteHeader({ home = false }: { home?: boolean }) {
         <>
           <nav>
           <a href="#how" data-ga-event="cta_click" data-ga-location="header">How it works</a>
-          <a href="#updates" data-ga-event="cta_click" data-ga-location="header">What’s new</a>
+          <a href="#features" data-ga-event="cta_click" data-ga-location="header">Features</a>
           <a href="#pricing" data-ga-event="cta_click" data-ga-location="header">Pricing</a>
           <a href="#privacy" data-ga-event="cta_click" data-ga-location="header">Privacy</a>
           </nav>
