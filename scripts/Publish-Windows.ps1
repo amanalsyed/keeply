@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.0.4",
+    [string]$Version = "1.0.6.0",
     [string]$ApiBaseUrl = "https://www.trykeeply.live/",
     [string]$CheckoutUrl = "https://www.creem.io/payment/prod_6z7buEm087gA7b7rLpO94B"
 )

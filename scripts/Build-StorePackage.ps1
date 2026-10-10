@@ -1,7 +1,7 @@
 param(
-    [string]$Version = "1.0.5.0",
+    [string]$Version = "1.0.6.0",
     [string]$SdkBuildToolsVersion = "10.0.26100.7705",
-    [string]$PublishedPath = "artifacts\Keeply-win-x64-1.0.5.0"
+    [string]$PublishedPath = "artifacts\Keeply-win-x64"
 )
 
 $ErrorActionPreference = "Stop"
