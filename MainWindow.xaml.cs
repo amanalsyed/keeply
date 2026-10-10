@@ -44,6 +44,7 @@ public partial class MainWindow : Window
     private WindowState _savedState;
     private bool _startupResumeChecked;
     private bool _licenseValidationPending;
+    private bool _libraryReviewQueue;
     private System.Windows.Threading.DispatcherTimer? _licenseValidationTimer;
 
     public MainWindow()
@@ -161,7 +162,7 @@ public partial class MainWindow : Window
         }
         try
         {
-            if (_sourceFolder is not null && !PersistSession()) return;
+            if (_sourceFolder is not null && !_libraryReviewQueue && !PersistSession()) return;
             folder = Path.GetFullPath(folder);
             var files = Directory.EnumerateFiles(folder, "*", System.IO.SearchOption.TopDirectoryOnly)
                 .Where(p => Supported.Contains(Path.GetExtension(p)))
@@ -212,6 +213,7 @@ public partial class MainWindow : Window
             if (choice == ResumeChoice.Cancel) { SetStatus("Kept your current sorting session open."); return; }
 
             _photos.Clear();
+            _libraryReviewQueue = false;
             _actions.Clear();
             _undoHistory.Clear();
             _completedActions.Clear();
@@ -428,7 +430,7 @@ public partial class MainWindow : Window
                 }
             }
             var action = new TriageAction(kind, photo, target, _index, wasFavorite);
-            try { _resumeStore.RecordAction(_sourceFolder!, ToSavedAction(action)); }
+            try { if (!_libraryReviewQueue) _resumeStore.RecordAction(_sourceFolder!, ToSavedAction(action)); }
             catch (Exception ex) { ShowError("Photo processed, but its resume history could not be saved", ex); }
             _actions.Push(action);
             _undoHistory.Push(UndoEntry.ForTriage(action));
@@ -498,7 +500,7 @@ public partial class MainWindow : Window
                 return;
             if ((action.Kind is ActionKind.Album or ActionKind.Favorite) && action.TargetPath is not null && File.Exists(action.TargetPath)) File.Delete(action.TargetPath);
             if (action.Kind == ActionKind.Trash) RecycleBinRestorer.Restore(action.SourcePath);
-            try { _resumeStore.RecordUndo(_sourceFolder!, action.SourcePath); }
+            try { if (!_libraryReviewQueue) _resumeStore.RecordUndo(_sourceFolder!, action.SourcePath); }
             catch (Exception ex) { ShowError("Photo restored, but its resume history could not be updated", ex); }
             _actions.Pop();
             _undoHistory.Pop();
@@ -624,6 +626,29 @@ public partial class MainWindow : Window
     {
         var window = new DuplicateFinderWindow(_licenseStore, () => License_Click(this, new RoutedEventArgs())) { Owner = this };
         window.ShowDialog();
+    }
+    private void LibraryOrganizer_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new LibraryOrganizerWindow(_licenseStore, () => License_Click(this, new RoutedEventArgs()), StartLibraryGroup) { Owner = this };
+        window.ShowDialog();
+    }
+    private void StartLibraryGroup(string root, IReadOnlyList<string> paths, string title)
+    {
+        var available = paths.Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (available.Count == 0) { SetStatus("Those group files are no longer available. Analyze the library again."); return; }
+        if (_sourceFolder is not null && !_libraryReviewQueue && !PersistSession()) return;
+        _photos.Clear();
+        _photos.AddRange(available);
+        _actions.Clear(); _undoHistory.Clear(); _completedActions.Clear();
+        _sourceFolder = root;
+        _libraryReviewQueue = true;
+        _queueFingerprint = ComputeQueueFingerprint(_photos);
+        _index = _photos.Count == 0 ? -1 : 0;
+        _albumFolder = null;
+        FolderText.Text = title;
+        UpdateAlbumFolderUi();
+        SetStatus("Reviewing this library group. Files stay in place unless you choose an action.");
+        _ = ShowCurrentAsync();
     }
     private void BulkCompress_Click(object sender, RoutedEventArgs e)
     {
@@ -877,6 +902,7 @@ public partial class MainWindow : Window
 
     private bool PersistSession()
     {
+        if (_libraryReviewQueue) return true;
         if (_sourceFolder is null) return true;
         try
         {

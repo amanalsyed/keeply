@@ -7,22 +7,25 @@
         AllowDrop="True" DragEnter="Window_DragEnter" Drop="Window_Drop" KeyDown="Window_KeyDown" Loaded="Window_Loaded" Closing="Window_Closing">
   <Grid Margin="28">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-    <Grid Grid.Row="0" Margin="0,0,0,18">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <Grid Grid.Row="0" Margin="0,0,0,12">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <Image Source="{StaticResource KeeplyIcon}" Width="25" Height="25" Margin="0,0,9,0"/>
         <TextBlock Text="Keeply" FontSize="13" FontWeight="Bold" Foreground="#8BE0BC"/>
-                      </StackPanel>
-      <Button Grid.Column="1" Content="Choose folder" Click="ChooseFolder_Click" Margin="0,0,10,0"/>
-      <Button x:Name="AlbumFolderButton" Grid.Column="2" Content="Album: Choose" Click="ChangeAlbum_Click" Margin="0,0,10,0" ToolTip="Choose or change the album destination"/>
-      <Button x:Name="QuickFoldersButton" Grid.Column="3" Content="Quick folders · 0/9" Click="QuickFolders_Click" Margin="0,0,10,0" ToolTip="Assign destination folders to number keys 1–9"/>
-      <Button x:Name="SoundToggleButton" Grid.Column="4" Content="Sound: On" Click="SoundToggle_Click" Margin="0,0,10,0"/>
-      <Button x:Name="MotionModeButton" Grid.Column="5" Content="Motion: Smooth" Click="MotionMode_Click" Margin="0,0,10,0" ToolTip="Click to cycle Smooth, Standard, and Reduced motion"/>
-      <Button x:Name="LicenseButton" Grid.Column="6" Content="Free · 0/3 folders" Click="License_Click" Margin="0,0,10,0" ToolTip="View free allowance or manage a lifetime license"/>
-      <Button Grid.Column="7" Content="Find duplicates" Click="DuplicateFinder_Click" Margin="0,0,10,0" ToolTip="Scan this folder for exact and visually similar photos"/>
-      <Button Grid.Column="8" Content="Bulk compress" Click="BulkCompress_Click" Margin="0,0,10,0" ToolTip="Create compressed copies in another folder"/>
-      <Button Grid.Column="9" Content="Convert images" Click="ConvertImages_Click" Margin="0,0,10,0" ToolTip="Convert image copies to WebP, JPEG, or PNG"/>
-      <Button Grid.Column="10" Content="⛶" ToolTip="Toggle fullscreen (F11)" Click="Fullscreen_Click" Padding="13,9"/>
+      </StackPanel>
+      <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+        <Button Content="Choose folder" Click="ChooseFolder_Click" Margin="0,0,8,6"/>
+        <Button x:Name="AlbumFolderButton" Content="Album: Choose" Click="ChangeAlbum_Click" Margin="0,0,8,6" ToolTip="Choose or change the album destination"/>
+        <Button x:Name="QuickFoldersButton" Content="Quick folders · 0/9" Click="QuickFolders_Click" Margin="0,0,8,6" ToolTip="Assign destination folders to number keys 1–9"/>
+        <Button x:Name="SoundToggleButton" Content="Sound: On" Click="SoundToggle_Click" Margin="0,0,8,6"/>
+        <Button x:Name="MotionModeButton" Content="Motion: Smooth" Click="MotionMode_Click" Margin="0,0,8,6" ToolTip="Click to cycle Smooth, Standard, and Reduced motion"/>
+        <Button x:Name="LicenseButton" Content="Free · 0/3 folders" Click="License_Click" Margin="0,0,8,6" ToolTip="View free allowance or manage a lifetime license"/>
+        <Button Content="Find duplicates" Click="DuplicateFinder_Click" Margin="0,0,8,6" ToolTip="Scan this folder for exact and visually similar photos"/>
+        <Button Content="Organize library" Click="LibraryOrganizer_Click" Margin="0,0,8,6" ToolTip="Group photos by local metadata and review each group"/>
+        <Button Content="Bulk compress" Click="BulkCompress_Click" Margin="0,0,8,6" ToolTip="Create compressed copies in another folder"/>
+        <Button Content="Convert images" Click="ConvertImages_Click" Margin="0,0,8,6" ToolTip="Convert image copies to WebP, JPEG, or PNG"/>
+        <Button Content="⛶" ToolTip="Toggle fullscreen (F11)" Click="Fullscreen_Click" Padding="13,9" Margin="0,0,0,6"/>
+      </WrapPanel>
     </Grid>
     <Border Grid.Row="1" Background="#0A0B0D" BorderBrush="#222629" BorderThickness="1" CornerRadius="16" ClipToBounds="True"
             DragEnter="Window_DragEnter" Drop="Window_Drop">
@@ -66,9 +69,9 @@
       </Grid>
     </Border>
     <Grid Grid.Row="2" Margin="0,18,0,0">
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <Grid Grid.Row="0">
-       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
        <StackPanel VerticalAlignment="Center">
         <StackPanel Orientation="Horizontal">
           <TextBlock x:Name="ProgressText" Text="0 / 0" FontSize="19" FontWeight="SemiBold"/>
@@ -77,19 +80,19 @@
         <TextBlock x:Name="ActionCountsText" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
         <TextBlock x:Name="QuickFoldersHint" FontSize="10" Foreground="{StaticResource Muted}" Margin="0,3,0,0"/>
        </StackPanel>
-       <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+       <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
         <Button x:Name="PreviousButton" Content="←  Previous" Click="Previous_Click" Margin="0,0,8,0" ToolTip="Left arrow"/>
         <Button x:Name="NextButton" Content="Next  →" Click="Next_Click" ToolTip="Right arrow"/>
        </StackPanel>
-       <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-        <Button x:Name="UndoButton" Content="↶  Undo · U" Click="Undo_Click" Margin="0,0,9,0"/>
-        <Button x:Name="KeepButton" Content="Keep · K" Click="Keep_Click" Background="#214633" BorderBrush="#326447" Margin="0,0,9,0"/>
-        <Button x:Name="AlbumButton" Content="Album · A" Click="Album_Click" Background="#26384A" BorderBrush="#3C5870" Margin="0,0,9,0"/>
-        <Button x:Name="TrashButton" Content="Trash · T" Click="Trash_Click" Background="#492B2C" BorderBrush="#754345"/>
-       </StackPanel>
       </Grid>
-      <ProgressBar x:Name="QueueProgressBar" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Height="4" Margin="0,11,0,0" Background="#292D30" Foreground="#8BE0BC" BorderThickness="0"/>
-      <TextBlock x:Name="StatusText" Grid.Row="2" HorizontalAlignment="Center" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
+      <WrapPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+        <Button x:Name="UndoButton" Content="↶  Undo · U" Click="Undo_Click" Margin="0,0,8,8"/>
+        <Button x:Name="KeepButton" Content="Keep · K" Click="Keep_Click" Background="#214633" BorderBrush="#326447" Margin="0,0,8,8"/>
+        <Button x:Name="AlbumButton" Content="Album · A" Click="Album_Click" Background="#26384A" BorderBrush="#3C5870" Margin="0,0,8,8"/>
+        <Button x:Name="TrashButton" Content="Trash · T" Click="Trash_Click" Background="#492B2C" Margin="0,0,0,8"/>
+      </WrapPanel>
+      <ProgressBar x:Name="QueueProgressBar" Grid.Row="2" Minimum="0" Maximum="100" Value="0" Height="4" Margin="0,3,0,0" Background="#292D30" Foreground="#8BE0BC" BorderThickness="0"/>
+      <TextBlock x:Name="StatusText" Grid.Row="3" HorizontalAlignment="Center" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
     </Grid>
   </Grid>
 </Window>

@@ -134,7 +134,7 @@ public partial class DuplicateFinderWindow : Window
 
             foreach (var group in result.Groups) _groups.Add(group);
             var visuallyUnreadable = result.VisualFailures.Count;
-            ScanStatus.Text = $"Scanned {result.Files.Count:N0} photos. Found {_groups.Count:N0} groups ({result.Groups.Count(g => g.Kind == DuplicateKind.Exact)} exact, {result.Groups.Count(g => g.Kind == DuplicateKind.Similar)} similar)." +
+            ScanStatus.Text = $"Scanned {result.Files.Count:N0} photos. Found {_groups.Count:N0} groups ({result.Groups.Count(g => g.Kind == DuplicateKind.Exact)} exact, {result.Groups.Count(g => g.Kind == DuplicateKind.Similar)} similar). Reused {result.Reused:N0} cached fingerprints." +
                 (visuallyUnreadable > 0 ? $" {visuallyUnreadable:N0} photo(s) could not be compared visually; exact matching was still checked." : " All comparison stayed on this PC.");
             ReviewEmptyPanel.Visibility = _groups.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             ReviewEmptyText.Text = _groups.Count == 0 ? "No duplicate groups found." : "Choose a group to compare photos side by side.";
@@ -177,24 +177,45 @@ public partial class DuplicateFinderWindow : Window
     private static ScanResult ScanFolder(string root, bool includeSubfolders, IProgress<ScanProgressInfo> progress, CancellationToken token)
     {
         var files = EnumeratePhotoPaths(root, includeSubfolders, token);
+        var cache = RepeatWorkCache.Open($"duplicates|{Path.GetFullPath(root)}|{includeSubfolders}");
         var analyzed = new List<PhotoAnalysis>(files.Count);
         var visualFailures = new List<string>();
+        var reused = 0;
         for (var i = 0; i < files.Count; i++)
         {
             token.ThrowIfCancellationRequested();
             var path = files[i];
-            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1024 * 64, FileOptions.SequentialScan))
-                analyzed.Add(new PhotoAnalysis(path, Convert.ToHexString(SHA256.HashData(stream)), null));
-            try { analyzed[^1] = analyzed[^1] with { Fingerprint = CreateDifferenceHash(path) }; }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            if (cache.TryGetCurrentSource(path, out var cached) && !string.IsNullOrWhiteSpace(cached.Sha256))
             {
-                visualFailures.Add($"{Path.GetFileName(path)} — {ex.Message}");
+                analyzed.Add(new PhotoAnalysis(path, cached.Sha256, cached.DifferenceFingerprint));
+                if (!cached.DifferenceFingerprint.HasValue) visualFailures.Add($"{Path.GetFileName(path)} — previously unavailable for visual comparison");
+                reused++;
+            }
+            else
+            {
+                string sha256;
+                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1024 * 64, FileOptions.SequentialScan))
+                    sha256 = Convert.ToHexString(SHA256.HashData(stream));
+                ulong? fingerprint = null;
+                string? visualFailure = null;
+                try { fingerprint = CreateDifferenceHash(path); }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    visualFailure = $"{Path.GetFileName(path)} — {ex.Message}";
+                    visualFailures.Add(visualFailure);
+                }
+                analyzed.Add(new PhotoAnalysis(path, sha256, fingerprint));
+                var entry = RepeatWorkCache.SourceEntry(path);
+                entry.Sha256 = sha256;
+                entry.DifferenceFingerprint = fingerprint;
+                cache.Set(entry);
             }
             if (i % 8 == 0 || i == files.Count - 1)
-                progress.Report(new ScanProgressInfo(files.Count == 0 ? 35 : (int)((i + 1) * 35d / files.Count), $"Reading and fingerprinting {i + 1:N0} / {files.Count:N0}…"));
+                progress.Report(new ScanProgressInfo(files.Count == 0 ? 35 : (int)((i + 1) * 35d / files.Count), $"Checking {i + 1:N0} / {files.Count:N0} photos · reused {reused:N0}…"));
         }
 
         token.ThrowIfCancellationRequested();
+        cache.Save();
         var groups = new List<DuplicateGroup>();
         var exactFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var duplicateSet in analyzed.GroupBy(item => item.Sha256, StringComparer.Ordinal).Where(group => group.Count() > 1))
@@ -228,7 +249,7 @@ public partial class DuplicateFinderWindow : Window
 
         var orderedGroups = groups.OrderByDescending(group => group.Kind == DuplicateKind.Exact).ThenBy(group => group.Photos.Count).ToList();
         for (var i = 0; i < orderedGroups.Count; i++) orderedGroups[i].Number = i + 1;
-        return new ScanResult(files, orderedGroups, visualFailures);
+        return new ScanResult(files, orderedGroups, visualFailures, reused);
     }
 
     private static List<string> EnumeratePhotoPaths(string root, bool recursive, CancellationToken token)
@@ -491,7 +512,7 @@ public partial class DuplicateFinderWindow : Window
     private enum DuplicateKind { Exact, Similar }
     private sealed record PhotoAnalysis(string Path, string Sha256, ulong? Fingerprint);
     private sealed record ScanProgressInfo(int Percent, string Message);
-    private sealed record ScanResult(List<string> Files, List<DuplicateGroup> Groups, List<string> VisualFailures);
+    private sealed record ScanResult(List<string> Files, List<DuplicateGroup> Groups, List<string> VisualFailures, int Reused);
 
     private sealed class DuplicateGroup
     {

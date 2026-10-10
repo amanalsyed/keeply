@@ -1,0 +1,53 @@
+<Window x:Class="PhotoKeepKill.LibraryOrganizerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Keeply · Organize Library" Width="1180" Height="780" MinWidth="900" MinHeight="620"
+        WindowStartupLocation="CenterOwner" Background="#101214" Foreground="#F4F5F5">
+  <Window.Resources>
+    <Style x:Key="DarkComboItem" TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="#F4F5F5"/><Setter Property="Background" Value="#202427"/>
+      <Setter Property="Padding" Value="9,8"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border x:Name="ItemBorder" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="#30383A"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="#284336"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="#777F7B"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="DarkCombo" TargetType="ComboBox">
+      <Setter Property="Foreground" Value="#F4F5F5"/><Setter Property="Background" Value="#202427"/>
+      <Setter Property="BorderBrush" Value="#454D50"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="8"/>
+      <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboItem}"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox"><Grid>
+        <ToggleButton x:Name="DropDownToggle" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+          <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5" Padding="{Binding Padding, RelativeSource={RelativeSource AncestorType=ComboBox}}"><Grid><ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,22,0" Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"/><TextBlock Text="⌄" Foreground="#C9D1CE" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border></ControlTemplate></ToggleButton.Template>
+        </ToggleButton>
+        <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+          <Border Background="#202427" BorderBrush="#454D50" BorderThickness="1" CornerRadius="5" MaxHeight="320" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+            <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer>
+          </Border>
+        </Popup>
+      </Grid><ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.55"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+    </Style>
+  </Window.Resources>
+  <Grid Margin="24">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <Grid Grid.Row="0" Margin="0,0,0,16">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel><TextBlock Text="Organize your library" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Keeply scans locally and creates review groups. It does not change your files during analysis." Foreground="#A2A9AD" Margin="0,5,0,0"/></StackPanel>
+      <Button Grid.Column="1" Content="Choose folder" Click="ChooseFolder_Click" Margin="0,0,8,0"/>
+      <CheckBox x:Name="IncludeSubfoldersCheck" Grid.Column="2" Content="Include subfolders" VerticalAlignment="Center" Margin="8,0,16,0" Foreground="#D5DAD7" IsChecked="True"/>
+      <CheckBox x:Name="RecheckAllCheck" Grid.Column="3" Content="Recheck all files" VerticalAlignment="Center" Margin="0,0,14,0" Foreground="#D5DAD7" ToolTip="Ignore Keeply’s local scan cache once and read every selected file again"/>
+      <Button x:Name="ScanButton" Grid.Column="4" Content="Analyze" Click="Scan_Click" Background="#245843" BorderBrush="#367A5D"/>
+    </Grid>
+    <Border Grid.Row="1" Background="#191C1F" CornerRadius="10" Padding="12,9" Margin="0,0,0,14"><TextBlock x:Name="ScanStatus" Text="Choose a library folder. Analysis stays on this PC." Foreground="#C2CAC6" TextTrimming="CharacterEllipsis"/></Border>
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="240"/><ColumnDefinition Width="12"/><ColumnDefinition Width="300"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Border Grid.Column="0" Background="#191C1F" BorderBrush="#282D30" BorderThickness="1" CornerRadius="12" Padding="12">
+        <DockPanel><TextBlock DockPanel.Dock="Top" Text="GROUP BY" FontSize="11" FontWeight="Bold" Foreground="#8BE0BC" Margin="2,2,0,10"/><ComboBox x:Name="CategoryBox" Style="{StaticResource DarkCombo}" SelectionChanged="CategoryBox_SelectionChanged" IsEnabled="False"/></DockPanel>
+      </Border>
+      <Border Grid.Column="2" Background="#191C1F" BorderBrush="#282D30" BorderThickness="1" CornerRadius="12" Padding="10">
+        <DockPanel><StackPanel DockPanel.Dock="Top"><TextBlock Text="GROUPS" FontSize="11" FontWeight="Bold" Foreground="#8BE0BC" Margin="5,3,0,8"/><Button x:Name="SaveAllButton" Content="Save all groups…" Click="SaveAll_Click" IsEnabled="False" Margin="0,0,0,9" ToolTip="Copy every group in the current grouping into separate folders"/></StackPanel><ListBox x:Name="GroupsList" SelectionChanged="GroupsList_SelectionChanged" Background="Transparent" BorderThickness="0" Foreground="#F4F5F5"><ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="10,9"/><Setter Property="Margin" Value="0,0,0,5"/><Setter Property="Background" Value="#202427"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="7" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Bd" Property="Background" Value="#284336"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle><ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Title}" TextWrapping="Wrap" VerticalAlignment="Center"/><TextBlock Grid.Column="1" Text="{Binding Count}" Foreground="#A2A9AD" Margin="8,0,0,0" VerticalAlignment="Center"/></Grid></DataTemplate></ListBox.ItemTemplate></ListBox></DockPanel>
+      </Border>
+      <Border Grid.Column="4" Background="#191C1F" BorderBrush="#282D30" BorderThickness="1" CornerRadius="12" Padding="14">
+        <DockPanel><StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"><TextBlock x:Name="GroupStatus" Foreground="#A2A9AD" Text="Analyze a folder, then choose a group." TextTrimming="CharacterEllipsis" Margin="0,0,0,9"/><WrapPanel HorizontalAlignment="Right"><Button x:Name="SaveGroupButton" Content="Save group as…" Click="SaveGroup_Click" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="ReviewButton" Content="Review this group in Keeply" Click="Review_Click" IsEnabled="False" Background="#245843" BorderBrush="#367A5D"/></WrapPanel></StackPanel><ListBox x:Name="PhotosList" Background="Transparent" BorderThickness="0" Foreground="#F4F5F5"><ListBox.ItemTemplate><DataTemplate><Border Background="#202427" CornerRadius="7" Padding="10" Margin="0,0,0,6"><StackPanel><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/><TextBlock Text="{Binding Details}" Foreground="#A2A9AD" FontSize="11" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/></StackPanel></Border></DataTemplate></ListBox.ItemTemplate></ListBox></DockPanel>
+      </Border>
+    </Grid>
+    <ProgressBar x:Name="ScanProgress" Grid.Row="3" Height="4" Margin="0,14,0,0" Minimum="0" Maximum="100" Value="0" Background="#292D30" Foreground="#8BE0BC" BorderThickness="0"/>
+  </Grid>
+</Window>

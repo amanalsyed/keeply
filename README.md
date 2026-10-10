@@ -37,6 +37,14 @@ Album and Quick Folder copies use a numbered suffix to avoid overwriting. Folder
 
 Open **Find duplicates** to scan a selected folder for exact copies and visually similar photos. Subfolder scanning is optional. Keeply groups matches for comparison; you choose which files to send to the Recycle Bin. It never deletes matches automatically, and removals can be undone.
 
+## Organize a photo library
+
+Open **Organize library** to group photos by capture date, camera metadata, GPS coordinates, likely screenshots, format, dimensions, and exact or visually similar matches. Scanning and grouping run locally. **Save all groups** copies the current grouping into separate folders; **Save group as** copies one selected group into a folder with a name you choose. Originals stay in place.
+
+Keeply stores a local scan index under `%LOCALAPPDATA%\PhotoKeepKill\LibraryIndex`. Repeat scans reuse metadata and duplicate fingerprints for files whose path, size, and modified time have not changed. Use **Recheck all files** to bypass the index and refresh it. The index stays on this PC and does not contain image data.
+
+Duplicate Finder also caches each photo's exact-file hash and visual fingerprint locally, reusing them on repeat scans when the file's path, size, and modified time are unchanged. Bulk Compress and Convert images reuse a completed output when the source is unchanged, the operation settings and folders match, and the saved output still exists with its original size and modified time. New or changed source files and missing or edited outputs are processed again. Cache files stay under `%LOCALAPPDATA%\PhotoKeepKill\WorkCache`; files are still enumerated on each run so additions and removals are detected.
+
 ## Bulk Compress and Convert Images
 
 Use **Bulk compress** to create separate, smaller copies while leaving originals untouched. JPEG quality is selectable; PNG/BMP/GIF/TIFF use lossless handling when possible, and files are preserved unchanged if re-encoding would make them larger. Animated images and multi-page TIFFs stay unchanged.

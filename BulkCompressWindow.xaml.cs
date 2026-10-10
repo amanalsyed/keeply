@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -184,7 +185,8 @@ public partial class BulkCompressWindow : Window
 
         try
         {
-            var summary = await Task.Run(() => CompressFiles(_sourceFolder, _outputFolder, _files, quality, progress, _cancellation.Token));
+            var cacheScope = $"compress|{Path.GetFullPath(_sourceFolder)}|{Path.GetFullPath(_outputFolder)}|{IncludeSubfoldersCheck.IsChecked == true}|{quality}";
+            var summary = await Task.Run(() => CompressFiles(_sourceFolder, _outputFolder, _files, quality, cacheScope, progress, _cancellation.Token));
             RunStatusText.Text = summary.Cancelled
                 ? "Stopped. Files already completed are in the destination; originals remain unchanged."
                 : summary.Failed == 0
@@ -213,6 +215,7 @@ public partial class BulkCompressWindow : Window
         string destination,
         IReadOnlyList<string> files,
         int jpegQuality,
+        string cacheScope,
         IProgress<CompressionProgress> progress,
         CancellationToken cancellationToken)
     {
@@ -223,6 +226,8 @@ public partial class BulkCompressWindow : Window
         var copied = 0;
         var failed = 0;
         var completed = 0;
+        var reused = 0;
+        var cache = RepeatWorkCache.Open(cacheScope);
 
         var cancelled = false;
         foreach (var file in files)
@@ -234,6 +239,20 @@ public partial class BulkCompressWindow : Window
             {
                 var sourceBytes = new FileInfo(file).Length;
                 originalBytes += sourceBytes;
+                if (cache.TryGetCompletedOutput(file, out var cached))
+                {
+                    var cachedBytes = cached.OutputLength;
+                    resultBytes += cachedBytes;
+                    if (cached.WasCompressed) compressed++; else copied++;
+                    reused++;
+                    pending.Add(new CompressionRow(file, cached.Result, cached.Savings, cached.OutputPath, "Reused the verified compressed copy from an earlier run."));
+                    completed++;
+                    var cachedSaved = Math.Max(0, originalBytes - resultBytes);
+                    progress.Report(new CompressionProgress(completed,
+                        $"Processed {completed:N0} of {files.Count:N0} · reused {reused:N0} saved copies",
+                        $"{completed:N0}/{files.Count:N0} · reused {reused:N0} · saved {FormatSize(cachedSaved)} · {failed:N0} failed", pending));
+                    continue;
+                }
                 var relative = Path.GetRelativePath(source, file);
                 var relativeDirectory = Path.GetDirectoryName(relative);
                 var outputDirectory = string.IsNullOrEmpty(relativeDirectory)
@@ -311,6 +330,7 @@ public partial class BulkCompressWindow : Window
                 string outputPath;
                 string resultLabel;
                 long outputBytes;
+                var wasCompressed = false;
                 if (copyReason is not null || encodedBytes >= sourceBytes || tempPath is null)
                 {
                     if (tempPath is not null && File.Exists(tempPath)) File.Delete(tempPath);
@@ -327,6 +347,7 @@ public partial class BulkCompressWindow : Window
                     outputBytes = new FileInfo(outputPath).Length;
                     resultLabel = transformLabel ?? "Compressed copy";
                     compressed++;
+                    wasCompressed = true;
                 }
 
                 resultBytes += outputBytes;
@@ -337,6 +358,15 @@ public partial class BulkCompressWindow : Window
                         : "The lossless output was not smaller, so Keeply preserved the original bytes."
                     : "Saved as a separate copy; your original was not changed.";
                 pending.Add(new CompressionRow(file, resultLabel, FormatSavings(sourceBytes - outputBytes), outputPath, detail));
+                var entry = RepeatWorkCache.SourceEntry(file);
+                var outputInfo = new FileInfo(outputPath);
+                entry.OutputPath = outputPath;
+                entry.OutputLength = outputInfo.Length;
+                entry.OutputLastWriteUtcTicks = outputInfo.LastWriteTimeUtc.Ticks;
+                entry.Result = resultLabel;
+                entry.Savings = FormatSavings(sourceBytes - outputBytes);
+                entry.WasCompressed = wasCompressed;
+                cache.Set(entry);
             }
             catch (OperationCanceledException)
             {
@@ -363,7 +393,8 @@ public partial class BulkCompressWindow : Window
                 pending));
         }
 
-        return new CompressionSummary(completed, compressed, copied, failed, originalBytes, resultBytes, cancelled);
+        try { cache.Save(); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { }
+        return new CompressionSummary(completed, compressed, copied, failed, originalBytes, resultBytes, cancelled, reused);
     }
 
     private static string GetUniqueOutputPath(string directory, string fileName, string extension)
@@ -391,7 +422,7 @@ public partial class BulkCompressWindow : Window
     private static string FormatSummary(CompressionSummary summary)
     {
         var saved = Math.Max(0, summary.OriginalBytes - summary.OutputBytes);
-        return $"{summary.Completed:N0} done · {summary.Compressed:N0} compressed · {summary.Copied:N0} unchanged · {summary.Failed:N0} failed · saved {FormatSize(saved)}";
+        return $"{summary.Completed:N0} done · {summary.Compressed:N0} compressed · {summary.Copied:N0} unchanged · {summary.Reused:N0} reused · {summary.Failed:N0} failed · saved {FormatSize(saved)}";
     }
 
     private static string FormatSavings(long bytes)
@@ -444,7 +475,7 @@ public partial class BulkCompressWindow : Window
     private void ShowError(string title, string detail) => MessageBox.Show(this, $"{title}.\n\n{detail}", "Keeply · Bulk Compress", MessageBoxButton.OK, MessageBoxImage.Warning);
 
     private sealed record CompressionProgress(int Completed, string Status, string Totals, IReadOnlyList<CompressionRow> NewResults);
-    private sealed record CompressionSummary(int Completed, int Compressed, int Copied, int Failed, long OriginalBytes, long OutputBytes, bool Cancelled);
+    private sealed record CompressionSummary(int Completed, int Compressed, int Copied, int Failed, long OriginalBytes, long OutputBytes, bool Cancelled, int Reused);
 
     public sealed record CompressionRow(string SourcePath, string Result, string Savings, string OutputPath, string Detail)
     {

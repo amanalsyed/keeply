@@ -212,7 +212,8 @@ public partial class ImageConverterWindow : Window
 
         try
         {
-            var summary = await Task.Run(() => ConvertFiles(_sourceFolder, _outputFolder, _files, targetFormat, quality, losslessWebp, progress, _cancellation.Token));
+            var cacheScope = $"convert|{Path.GetFullPath(_sourceFolder)}|{Path.GetFullPath(_outputFolder)}|{IncludeSubfoldersCheck.IsChecked == true}|{targetFormat}|{quality}|{losslessWebp}";
+            var summary = await Task.Run(() => ConvertFiles(_sourceFolder, _outputFolder, _files, targetFormat, quality, losslessWebp, cacheScope, progress, _cancellation.Token));
             RunStatusText.Text = summary.Cancelled
                 ? "Stopped. Converted files are in the destination; originals remain unchanged."
                 : summary.Failed == 0
@@ -243,6 +244,7 @@ public partial class ImageConverterWindow : Window
         string targetFormat,
         int quality,
         bool losslessWebp,
+        string cacheScope,
         IProgress<ConversionProgress> progress,
         CancellationToken cancellationToken)
     {
@@ -252,10 +254,12 @@ public partial class ImageConverterWindow : Window
         var skipped = 0;
         var failed = 0;
         var completed = 0;
+        var reused = 0;
         long inputBytes = 0;
         long outputBytes = 0;
         var cancelled = false;
         var targetExtension = "." + targetFormat;
+        var cache = RepeatWorkCache.Open(cacheScope);
 
         foreach (var file in files)
         {
@@ -265,6 +269,20 @@ public partial class ImageConverterWindow : Window
             try
             {
                 var sourceBytes = new FileInfo(file).Length;
+                if (cache.TryGetCompletedOutput(file, out var cached))
+                {
+                    inputBytes += sourceBytes;
+                    outputBytes += cached.OutputLength;
+                    if (cached.WasConverted) converted++; else unchanged++;
+                    reused++;
+                    pending.Add(new ConversionRow(file, cached.Result, cached.Savings, cached.OutputPath, "Reused the verified converted copy from an earlier run."));
+                    completed++;
+                    progress.Report(new ConversionProgress(completed,
+                        $"Processed {completed:N0} of {files.Count:N0} · reused {reused:N0} saved copies",
+                        $"{completed:N0}/{files.Count:N0} · reused {reused:N0} · {converted:N0} converted · {unchanged:N0} copied · {skipped:N0} skipped · {failed:N0} failed",
+                        pending));
+                    continue;
+                }
                 var relative = Path.GetRelativePath(source, file);
                 var relativeDirectory = Path.GetDirectoryName(relative);
                 var outputDirectory = string.IsNullOrEmpty(relativeDirectory)
@@ -280,7 +298,10 @@ public partial class ImageConverterWindow : Window
                     inputBytes += sourceBytes;
                     outputBytes += sourceBytes;
                     unchanged++;
-                    pending.Add(new ConversionRow(file, "Already this format · copied", "0 change", sameFormatPath, "This file already uses the selected output format. A separate copy was saved."));
+                    var sameFormatSavings = "0 change";
+                    pending.Add(new ConversionRow(file, "Already this format · copied", sameFormatSavings, sameFormatPath, "This file already uses the selected output format. A separate copy was saved."));
+                    var entry = CreateOutputCacheEntry(file, sameFormatPath, "Already this format · copied", sameFormatSavings, wasConverted: false);
+                    cache.Set(entry);
                 }
                 else
                 {
@@ -325,7 +346,10 @@ public partial class ImageConverterWindow : Window
                         var mode = targetFormat.Equals("webp", StringComparison.OrdinalIgnoreCase)
                             ? losslessWebp ? " · lossless" : $" · quality {quality}"
                             : targetFormat.Equals("jpg", StringComparison.OrdinalIgnoreCase) ? $" · quality {quality}" : "";
-                        pending.Add(new ConversionRow(file, $"Converted to {targetFormat.ToUpperInvariant()}{mode}", FormatSizeChange(sourceBytes - writtenBytes), outputPath, $"Saved as {outputPath}"));
+                        var result = $"Converted to {targetFormat.ToUpperInvariant()}{mode}";
+                        var savings = FormatSizeChange(sourceBytes - writtenBytes);
+                        pending.Add(new ConversionRow(file, result, savings, outputPath, $"Saved as {outputPath}"));
+                        cache.Set(CreateOutputCacheEntry(file, outputPath, result, savings, wasConverted: true));
                     }
                 }
             }
@@ -353,7 +377,21 @@ public partial class ImageConverterWindow : Window
                 pending));
         }
 
-        return new ConversionSummary(completed, converted, unchanged, skipped, failed, inputBytes, outputBytes, cancelled);
+        try { cache.Save(); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { }
+        return new ConversionSummary(completed, converted, unchanged, skipped, failed, inputBytes, outputBytes, cancelled, reused);
+    }
+
+    private static RepeatWorkEntry CreateOutputCacheEntry(string sourcePath, string outputPath, string result, string savings, bool wasConverted)
+    {
+        var entry = RepeatWorkCache.SourceEntry(sourcePath);
+        var output = new FileInfo(outputPath);
+        entry.OutputPath = outputPath;
+        entry.OutputLength = output.Length;
+        entry.OutputLastWriteUtcTicks = output.LastWriteTimeUtc.Ticks;
+        entry.Result = result;
+        entry.Savings = savings;
+        entry.WasConverted = wasConverted;
+        return entry;
     }
 
     private static SKBitmap DecodeWpfBitmap(string path)
@@ -465,7 +503,7 @@ public partial class ImageConverterWindow : Window
     {
         var changed = summary.InputBytes - summary.OutputBytes;
         var sizeResult = changed >= 0 ? $"size down {FormatSize(changed)}" : $"size up {FormatSize(-changed)}";
-        return $"{summary.Completed:N0} done · {summary.Converted:N0} converted · {summary.Unchanged:N0} copied · {summary.Skipped:N0} skipped · {summary.Failed:N0} failed · {sizeResult}";
+        return $"{summary.Completed:N0} done · {summary.Converted:N0} converted · {summary.Unchanged:N0} copied · {summary.Reused:N0} reused · {summary.Skipped:N0} skipped · {summary.Failed:N0} failed · {sizeResult}";
     }
 
     private static string FormatSizeChange(long bytes) => bytes > 0 ? $"−{FormatSize(bytes)}" : bytes < 0 ? $"+{FormatSize(-bytes)}" : "0 change";
@@ -513,7 +551,7 @@ public partial class ImageConverterWindow : Window
     private void ShowError(string title, string detail) => MessageBox.Show(this, $"{title}.\n\n{detail}", "Keeply · Convert images", MessageBoxButton.OK, MessageBoxImage.Warning);
 
     private sealed record ConversionProgress(int Completed, string Status, string Totals, IReadOnlyList<ConversionRow> NewResults);
-    private sealed record ConversionSummary(int Completed, int Converted, int Unchanged, int Skipped, int Failed, long InputBytes, long OutputBytes, bool Cancelled);
+    private sealed record ConversionSummary(int Completed, int Converted, int Unchanged, int Skipped, int Failed, long InputBytes, long OutputBytes, bool Cancelled, int Reused);
 
     public sealed record ConversionRow(string SourcePath, string Result, string SizeChange, string OutputPath, string Detail)
     {
