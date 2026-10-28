@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.0.6.0",
+    [string]$Version = "1.0.7.0",
     [string]$SdkBuildToolsVersion = "10.0.26100.7705",
     [string]$PublishedPath = "artifacts\Keeply-win-x64"
 )
@@ -37,37 +37,80 @@ if (-not (Test-Path $makeAppx) -or -not (Test-Path $signTool)) {
 if (Test-Path $stage) { throw "Staging folder already exists; choose another version or remove it after verifying its contents: $stage" }
 New-Item -ItemType Directory -Force -Path $stage, (Join-Path $stage "Assets"), (Split-Path -Parent $output) | Out-Null
 Copy-Item -Path (Join-Path $published "*") -Destination $stage -Recurse -Force
+Get-ChildItem -LiteralPath $stage -Filter "*.pdb" -File -Recurse | Remove-Item -Force
 
-# Generate the tile images from the app's existing icon so the package carries Keeply branding.
+# Render each package tile from the vector-like Keeply mark at high resolution. Do not use
+# Icon.ToBitmap() here: it returns a small ICO frame (32x32 on this machine), which becomes
+# blurry when enlarged for the 150px and wide tiles.
 Add-Type -AssemblyName System.Drawing
-$icon = [System.Drawing.Icon]::new((Join-Path $root "assets\Keeply.ico"))
-try {
-    foreach ($spec in @(
-        @{ Name = "StoreLogo.png"; Width = 50; Height = 50 },
-        @{ Name = "Square44x44Logo.png"; Width = 44; Height = 44 },
-        @{ Name = "Square150x150Logo.png"; Width = 150; Height = 150 },
-        @{ Name = "Wide310x150Logo.png"; Width = 310; Height = 150 }
-    )) {
-        $bitmap = [System.Drawing.Bitmap]::new($spec.Width, $spec.Height)
+function New-KeeplyTileImage {
+    param([int]$Width, [int]$Height, [string]$Path)
+
+    $supersample = 8
+    $largeWidth = $Width * $supersample
+    $largeHeight = $Height * $supersample
+    $large = [System.Drawing.Bitmap]::new($largeWidth, $largeHeight, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    try {
+        $g = [System.Drawing.Graphics]::FromImage($large)
         try {
-            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+            $g.Clear([System.Drawing.Color]::Transparent)
+            $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+            $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+            $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+
+            $side = [double][Math]::Min($largeWidth, $largeHeight)
+            $left = ($largeWidth - $side) / 2.0
+            $top = ($largeHeight - $side) / 2.0
+            $inset = $side * 0.025
+            $tileLeft = $left + $inset
+            $tileTop = $top + $inset
+            $tileSide = $side - (2.0 * $inset)
+            $corner = $tileSide * 0.23
+            $tilePath = [System.Drawing.Drawing2D.GraphicsPath]::new()
             try {
-                $graphics.Clear([System.Drawing.Color]::Transparent)
-                $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-                $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
-                $size = [Math]::Min($spec.Width, $spec.Height)
-                $offsetX = [int](($spec.Width - $size) / 2)
-                $offsetY = [int](($spec.Height - $size) / 2)
-                $iconBitmap = $icon.ToBitmap()
-                try {
-                    $destination = [System.Drawing.Rectangle]::new($offsetX, $offsetY, $size, $size)
-                    $graphics.DrawImage($iconBitmap, $destination)
-                } finally { $iconBitmap.Dispose() }
-            } finally { $graphics.Dispose() }
-            $bitmap.Save((Join-Path $stage "Assets\$($spec.Name)"), [System.Drawing.Imaging.ImageFormat]::Png)
-        } finally { $bitmap.Dispose() }
-    }
-} finally { $icon.Dispose() }
+                $tilePath.AddArc([single]$tileLeft, [single]$tileTop, [single]$corner, [single]$corner, 180, 90)
+                $tilePath.AddArc([single]($tileLeft + $tileSide - $corner), [single]$tileTop, [single]$corner, [single]$corner, 270, 90)
+                $tilePath.AddArc([single]($tileLeft + $tileSide - $corner), [single]($tileTop + $tileSide - $corner), [single]$corner, [single]$corner, 0, 90)
+                $tilePath.AddArc([single]$tileLeft, [single]($tileTop + $tileSide - $corner), [single]$corner, [single]$corner, 90, 90)
+                $tilePath.CloseFigure()
+                $tileBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(255, 166, 231, 195))
+                try { $g.FillPath($tileBrush, $tilePath) } finally { $tileBrush.Dispose() }
+            } finally { $tilePath.Dispose() }
+
+            $pen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(255, 16, 21, 18), [single]($tileSide * 0.105))
+            try {
+                $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+                $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+                $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+                $g.DrawLine($pen, [single]($tileLeft + $tileSide * 0.37), [single]($tileTop + $tileSide * 0.25), [single]($tileLeft + $tileSide * 0.37), [single]($tileTop + $tileSide * 0.75))
+                $g.DrawLine($pen, [single]($tileLeft + $tileSide * 0.39), [single]($tileTop + $tileSide * 0.50), [single]($tileLeft + $tileSide * 0.70), [single]($tileTop + $tileSide * 0.28))
+                $g.DrawLine($pen, [single]($tileLeft + $tileSide * 0.39), [single]($tileTop + $tileSide * 0.50), [single]($tileLeft + $tileSide * 0.70), [single]($tileTop + $tileSide * 0.72))
+            } finally { $pen.Dispose() }
+        } finally { $g.Dispose() }
+
+        $final = [System.Drawing.Bitmap]::new($Width, $Height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+        try {
+            $out = [System.Drawing.Graphics]::FromImage($final)
+            try {
+                $out.Clear([System.Drawing.Color]::Transparent)
+                $out.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+                $out.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+                $out.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+                $out.DrawImage($large, 0, 0, $Width, $Height)
+            } finally { $out.Dispose() }
+            $final.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+        } finally { $final.Dispose() }
+    } finally { $large.Dispose() }
+}
+
+foreach ($spec in @(
+    @{ Name = "StoreLogo.png"; Width = 50; Height = 50 },
+    @{ Name = "Square44x44Logo.png"; Width = 44; Height = 44 },
+    @{ Name = "Square150x150Logo.png"; Width = 150; Height = 150 },
+    @{ Name = "Wide310x150Logo.png"; Width = 310; Height = 150 }
+)) {
+    New-KeeplyTileImage -Width $spec.Width -Height $spec.Height -Path (Join-Path $stage "Assets\$($spec.Name)")
+}
 
 $manifest = @"
 <?xml version="1.0" encoding="utf-8"?>
@@ -111,24 +154,24 @@ if ($LASTEXITCODE -ne 0) { throw "MakeAppx failed with exit code $LASTEXITCODE."
 # A temporary matching certificate signs this submission package; the Store re-signs
 # packages after certification. The private key is not kept in the repository or output.
 $tempPfx = Join-Path $env:TEMP ("Keeply-Store-" + [Guid]::NewGuid().ToString("N") + ".pfx")
-$tempCer = Join-Path $env:TEMP ("Keeply-Store-" + [Guid]::NewGuid().ToString("N") + ".cer")
+$verifyStage = Join-Path $env:TEMP ("Keeply-Package-Verify-" + [Guid]::NewGuid().ToString("N"))
 $password = [Guid]::NewGuid().ToString("N")
 $cert = $null
 try {
     $cert = New-SelfSignedCertificate -Type Custom -Subject $publisher -CertStoreLocation "Cert:\CurrentUser\My" -KeyUsage DigitalSignature -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -NotAfter (Get-Date).AddYears(2) -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3")
     $securePassword = ConvertTo-SecureString -String $password -AsPlainText -Force
     Export-PfxCertificate -Cert $cert -FilePath $tempPfx -Password $securePassword | Out-Null
-    Export-Certificate -Cert $cert -FilePath $tempCer | Out-Null
-    Import-Certificate -FilePath $tempCer -CertStoreLocation "Cert:\CurrentUser\Root" | Out-Null
     & $signTool sign /fd SHA256 /f $tempPfx /p $password $output
     if ($LASTEXITCODE -ne 0) { throw "SignTool failed with exit code $LASTEXITCODE." }
-    & $signTool verify /pa /v $output
-    if ($LASTEXITCODE -ne 0) { throw "SignTool could not verify the signed package." }
+
+    # Validate that the completed package can be read after signing. Avoid installing
+    # a temporary self-signed certificate into the Windows Root store just to verify it.
+    & $makeAppx unpack /p $output /d $verifyStage /o
+    if ($LASTEXITCODE -ne 0) { throw "MakeAppx could not validate the completed package." }
 } finally {
     if (Test-Path $tempPfx) { Remove-Item -LiteralPath $tempPfx -Force }
-    if (Test-Path $tempCer) { Remove-Item -LiteralPath $tempCer -Force }
+    if (Test-Path $verifyStage) { Remove-Item -LiteralPath $verifyStage -Recurse -Force }
     if ($cert) {
-        & certutil.exe -user -delstore Root $cert.Thumbprint *> $null
         & certutil.exe -user -delstore My $cert.Thumbprint *> $null
     }
 }
